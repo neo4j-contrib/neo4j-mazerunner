@@ -22,7 +22,7 @@ yes y | ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 
 # Copy configurations for HDFS
-cp /vagrant/conf/* hadoop-2.4.1/etc/hadoop/
+cp /vagrant/conf/hadoop/* hadoop-2.4.1/etc/hadoop/
 
 # Format namenode
 hadoop-2.4.1/bin/hadoop namenode -format
@@ -48,6 +48,10 @@ echo 'deb http://debian.neo4j.org/repo stable/' > /etc/apt/sources.list.d/neo4j.
 aptitude update -y # Find out about the files in our repository
 aptitude install neo4j -y # Install Neo4j, community edition
 
+# Replace default Neo4j configuration
+cp /vagrant/conf/neo4j/* /etc/neo4j/
+
+# Install git
 apt-get -y install git
 
 # Install Maven
@@ -69,23 +73,23 @@ apt-get update
 apt-get -y install sbt
 
 # Copy mazerunner source
-
-# Configure mazerunner/extension/src/main/resources/mazerunner.properties
+git clone https://github.com/kbastani/neo4j-mazerunner.git
 
 # Maven package mazerunner/extension with assemblies
+cd neo4j-mazerunner/extension
+mvn assembly:assembly -DdescriptorId=jar-with-dependencies
 
 # Copy the mazerunner/extension jar file from mazerunner/extension/target to neo4j/plugins
+cp target/extension-1.0-jar-with-dependencies.jar /usr/share/neo4j/plugins/extension-1.0-jar-with-dependencies.jar
 
-# Modify neo4j-server.properties to declare mazerunner as an extension
+# Finished vagrant provisioning
+# To start Mazerunner on the VM, do the following
 
-# Start mazerunner/spark in background
+# vagrant ssh
+# sudo neo4j-mazerunner/spark/sbt run
+# yes Yes | sudo hadoop-2.4.1/sbin/start-dfs.sh
 
-# Start RabbitMQ server
+# # Before running the next step, import a dataset into Neo4j
 
-# Start Neo4j server
-
-# Import sample dataset to Neo4j
-
-# curl to http://localhost:7474/service/mazerunner/warmup
-
-# curl to http://localhost:7474/service/mazerunner/pagerank
+# curl http://localhost:7474/service/mazerunner/warmup
+# curl http://localhost:7474/service/mazerunner/pagerank
