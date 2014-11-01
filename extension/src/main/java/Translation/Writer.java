@@ -1,6 +1,6 @@
-package Translation;
+package translation;
 
-import Messaging.Worker;
+import messaging.Worker;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import org.apache.hadoop.fs.FileSystem;

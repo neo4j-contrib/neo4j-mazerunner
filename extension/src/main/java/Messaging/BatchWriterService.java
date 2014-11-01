@@ -1,4 +1,4 @@
-package Messaging;
+package messaging;
 
 import com.google.common.util.concurrent.AbstractScheduledService;
 import com.rabbitmq.client.Channel;

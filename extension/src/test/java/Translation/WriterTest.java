@@ -1,4 +1,4 @@
-package Translation;
+package translation;
 
 import config.ConfigurationLoader;
 import junit.framework.TestCase;

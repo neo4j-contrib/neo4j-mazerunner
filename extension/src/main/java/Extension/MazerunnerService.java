@@ -1,8 +1,8 @@
-package Extension;
+package extension;
 
 
-import Messaging.BatchWriterService;
-import Translation.Writer;
+import messaging.BatchWriterService;
+import translation.Writer;
 import com.google.gson.Gson;
 import org.neo4j.graphdb.GraphDatabaseService;
 
