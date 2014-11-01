@@ -8,7 +8,7 @@ sudo /var/lib/neo4j/bin/neo4j restart
 curl http://localhost:7474/service/mazerunner/warmup
 
 cd neo4j-mazerunner/spark
-sudo mvn install
+sudo mvn install -DskipTests
 
 
 echo ""
