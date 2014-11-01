@@ -77,7 +77,7 @@ git clone https://github.com/kbastani/neo4j-mazerunner.git
 
 # Maven package mazerunner/extension with assemblies
 cd neo4j-mazerunner/extension
-mvn assembly:assembly -DdescriptorId=jar-with-dependencies
+mvn assembly:assembly -DdescriptorId=jar-with-dependencies -DskipTests
 
 # Copy the mazerunner/extension jar file from mazerunner/extension/target to neo4j/plugins
 cp target/extension-1.0-jar-with-dependencies.jar /usr/share/neo4j/plugins/extension-1.0-jar-with-dependencies.jar
