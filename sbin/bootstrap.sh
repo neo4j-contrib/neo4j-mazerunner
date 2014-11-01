@@ -86,8 +86,9 @@ cp target/extension-1.0-jar-with-dependencies.jar /usr/share/neo4j/plugins/exten
 # To start Mazerunner on the VM, do the following
 
 # vagrant ssh
-# sudo neo4j-mazerunner/spark/sbt run
-# yes Yes | sudo hadoop-2.4.1/sbin/start-dfs.sh
+# yes yes | sudo hadoop-2.4.1/sbin/start-dfs.sh
+# cd neo4j-mazerunner/spark
+# sudo sbt run
 
 # # Before running the next step, import a dataset into Neo4j
 

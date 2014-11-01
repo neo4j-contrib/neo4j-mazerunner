@@ -1,6 +1,7 @@
 package org.mazerunner.core.hdfs;
 
 import junit.framework.TestCase;
+import org.mazerunner.core.config.ConfigurationLoader;
 
 public class FileUtilTest extends TestCase {
 
@@ -12,7 +13,7 @@ public class FileUtilTest extends TestCase {
                 "3 .003";
 
         // Create test path
-        String path = "hdfs://0.0.0.0:9000/test/propertyNodeList.txt";
+        String path = ConfigurationLoader.getInstance().getHadoopHdfsUri() + "/test/propertyNodeList.txt";
 
         // Test writing the PageRank result to HDFS path
         FileUtil.writePropertyGraphUpdate(path, nodeList);

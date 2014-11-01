@@ -35,6 +35,20 @@ public class FileUtil {
      * @throws IOException
      */
     public static void writePropertyGraphUpdate(String path, String nodeList) throws URISyntaxException, IOException {
+        writeListFile(path, nodeList);
+
+        // Notify Neo4j that a property update list is available for processing
+        Sender.sendMessage(path);
+    }
+
+    /**
+     * Write a file to HDFS line by line.
+     * @param path The path to the HDFS file to be created.
+     * @param nodeList The list of node IDs and properties to update in Neo4j.
+     * @throws IOException
+     * @throws URISyntaxException
+     */
+    public static void writeListFile(String path, String nodeList) throws IOException, URISyntaxException {
         FileSystem fs = getHadoopFileSystem();
         Path updateFilePath = new Path(path);
         BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(updateFilePath,true)));
@@ -48,9 +62,6 @@ public class FileUtil {
         }
         br.flush();
         br.close();
-
-        // Notify Neo4j that a property update list is available for processing
-        Sender.sendMessage(path);
     }
 
     public static String readGraphAdjacenyList(String path) throws IOException, URISyntaxException {
