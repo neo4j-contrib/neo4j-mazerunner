@@ -1,0 +1,3 @@
+logLevel := Level.Warn
+
+externalPom()

@@ -5,6 +5,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
+import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -39,7 +40,7 @@ public class BatchWriterService extends AbstractScheduledService {
         logger.info("Connecting to RabbitMQ processor queue...");
 
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("localhost");
+        factory.setHost(ConfigurationLoader.getInstance().getRabbitmqNodename());
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 

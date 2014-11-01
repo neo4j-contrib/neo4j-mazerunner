@@ -25,10 +25,12 @@ public class ConfigurationLoader {
     public static final String HADOOP_HDFS_SITE_KEY = "org.mazerunner.hadoop.hdfs.path";
     public static final String HADOOP_HDFS_URI = "org.mazerunner.hadoop.hdfs.uri";
     public static final String MAZERUNNER_RELATIONSHIP_TYPE_KEY = "org.mazerunner.job.relationshiptype";
+    public static final String RABBITMQ_NODENAME_KEY = "org.mazerunner.rabbitmq.nodename";
     private String hadoopSitePath;
     private String hadoopHdfsPath;
     private String hadoopHdfsUri;
     private String mazerunnerRelationshipType;
+    private String rabbitmqNodename;
 
     private static ConfigurationLoader instance = null;
 
@@ -65,6 +67,7 @@ public class ConfigurationLoader {
         hadoopHdfsPath = prop.getProperty(HADOOP_HDFS_SITE_KEY);
         hadoopHdfsUri = java.net.URLDecoder.decode(prop.getProperty(HADOOP_HDFS_URI), "UTF-8");
         mazerunnerRelationshipType = prop.getProperty(MAZERUNNER_RELATIONSHIP_TYPE_KEY);
+        rabbitmqNodename = prop.getProperty(RABBITMQ_NODENAME_KEY);
     }
 
     public void initializeTest()
@@ -73,6 +76,7 @@ public class ConfigurationLoader {
         hadoopHdfsPath = "/Users/kennybastani/Downloads/hadoop-2.4.1/etc/hadoop/hdfs-site.xml";
         hadoopHdfsUri = "hdfs://0.0.0.0:9000";
         mazerunnerRelationshipType = "CONNECTED_TO";
+        rabbitmqNodename = "localhost";
     }
 
     public String getMazerunnerRelationshipType() {
@@ -91,5 +95,7 @@ public class ConfigurationLoader {
         return hadoopHdfsUri;
     }
 
-
+    public String getRabbitmqNodename() {
+        return rabbitmqNodename;
+    }
 }
