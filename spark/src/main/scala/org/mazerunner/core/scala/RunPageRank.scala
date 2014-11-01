@@ -21,7 +21,7 @@ object RunPageRank {
   def pageRank(sc: SparkContext, path: String) : String = {
     val graph = GraphLoader.edgeListFile(sc, path);
 
-    val rank = graph.pageRank(0.00001).vertices
+    val rank = graph.pageRank(0.0001).vertices
 
     val results = rank.map { row =>
       row._1 + " " + row._2

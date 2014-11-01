@@ -2,6 +2,7 @@ package org.mazerunner.core.processor;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.scala.RunPageRank;
 
 import java.io.IOException;
@@ -22,7 +23,7 @@ import java.net.URISyntaxException;
  */
 public class GraphProcessor {
 
-    public static final String PROPERTY_GRAPH_UPDATE_PATH = "hdfs://0.0.0.0:9000/neo4j/mazerunner/propertyUpdateList.txt";
+    public static final String PROPERTY_GRAPH_UPDATE_PATH = "/neo4j/mazerunner/propertyUpdateList.txt";
 
     public static void processEdgeList(String hdfsPath) throws IOException, URISyntaxException {
         String appName = "mazerunner";
@@ -38,6 +39,6 @@ public class GraphProcessor {
         String results = RunPageRank.pageRank(sc.sc(), hdfsPath);
 
         // Write results to HDFS
-        org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(PROPERTY_GRAPH_UPDATE_PATH, results);
+        org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH, results);
     }
 }

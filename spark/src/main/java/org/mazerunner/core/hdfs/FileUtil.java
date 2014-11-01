@@ -4,6 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.messaging.Sender;
 
 import java.io.*;
@@ -73,14 +74,11 @@ public class FileUtil {
      * @throws IOException
      * @throws URISyntaxException
      */
-    private static FileSystem getHadoopFileSystem() throws IOException, URISyntaxException {
-        /* TODO
-        * Extract configurations into a property file */
+    public static FileSystem getHadoopFileSystem() throws IOException, URISyntaxException {
         Configuration hadoopConfiguration = new Configuration();
-        hadoopConfiguration.addResource(new Path("/Users/kennybastani/Downloads/hadoop-2.4.1/etc/hadoop/core-site.xml"));
-        hadoopConfiguration.addResource(new Path("/Users/kennybastani/Downloads/hadoop-2.4.1/etc/hadoop/hdfs-site.xml"));
+        hadoopConfiguration.addResource(new Path(ConfigurationLoader.getInstance().getHadoopHdfsPath()));
+        hadoopConfiguration.addResource(new Path(ConfigurationLoader.getInstance().getHadoopSitePath()));
         hadoopConfiguration.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
-
-        return FileSystem.get(new URI("hdfs://0.0.0.0:9000"), hadoopConfiguration);
+        return FileSystem.get(new URI(ConfigurationLoader.getInstance().getHadoopHdfsUri()), hadoopConfiguration);
     }
 }

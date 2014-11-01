@@ -1,9 +1,10 @@
 package org.mazerunner.core.messaging;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
+import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.processor.GraphProcessor;
 
 /**
@@ -27,7 +28,7 @@ public class Worker {
     public static void main(String[] argv) throws Exception {
 
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("localhost");
+        factory.setHost(ConfigurationLoader.getInstance().getRabbitmqNodename());
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 

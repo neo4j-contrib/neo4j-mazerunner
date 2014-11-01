@@ -3,6 +3,7 @@ package org.mazerunner.core.messaging;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.mazerunner.core.config.ConfigurationLoader;
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -24,7 +25,7 @@ public class Sender {
             throws java.io.IOException {
 
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("localhost");
+        factory.setHost(ConfigurationLoader.getInstance().getRabbitmqNodename());
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
