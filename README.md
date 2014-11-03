@@ -24,20 +24,14 @@ Alpha version
 
 Mazerunner is currently in its alpha stages of development. For this initial release PageRank is the only available graph processing algorithm.
 
-Other considerations:
-
-* Apache Spark is running embedded as a single instance cluster. For the 1.0 release, this will be configured to scale to many instances.
-* Contributions will be accepted in the form of Scala algorithms. Contributions guidelines (how to contribute) will soon be announced.
-* All pull requests will be reviewed and implemented if they improve the core architecture and pass all tests performed in the bundled test environment.
-
-Mazerunner sandbox
+Sandbox
 ================
 
 Mazerunner alpha ships with a bundled Unbuntu development environment that automatically sets up an environment with all required dependencies preconfigured.
 
 One of the challenges with setting up this architecture is the dependency management across Neo4j, Hadoop, and Spark. In order to make installation and development easier, a test environment was designed to get users and contributors up and running in minutes.
 
-Sandbox installation
+Installation
 ================
 
 The Mazerunner development environment sandbox requires [Vagrant](https://docs.vagrantup.com/v2/getting-started/index.html). To get started, visit the provided Vagrant link and follow the directions to install the platform.
@@ -113,25 +107,21 @@ If we connect to Neo4j via the Neo4j shell tool from the sandbox (`vagrant ssh`)
 
 You can also access the Neo4j Browser from the host OS at the URL: `http://localhost:65074` and run the same query in the browser.
 
-1.0.0 Roadmap
+Roadmap
 ================
 
 The roadmap for 1.0.0-M01 milestone can be found here: [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1)
 
 To add feature requests to this list, please open an issue against the `Mazerunner Roadmap` label.
 
-Licensing
+License
 ================
 
-Neo4j is an open source product. Neo4j supports a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from Neo Technology. The Neo4j Mazerunner project ships with a community edition of Neo4j under GPLv3 license.
-
-Mazerunner is an open source Neo4j community project. As an extension to Neo4j, all contributed code is permissively licensed under an [Apache License](https://github.com/kbastani/neo4j-mazerunner/blob/master/LICENSE).
-
-All other dependencies included in the Neo4j Mazerunner distribution are Apache License or another form of permissive license. These dependencies include:
-
-* Apache Hadoop 2.4.1 (Apache License)
-* Apache Spark 1.1.0 (Apache License)
-* RabbitMQ (Mozilla Public License)
-* See `pom.xml` for other bundled dependencies
+This library is licensed under the Apache License, Version 2.0.
 
 ![Neo4j Mazerunner](http://i.imgur.com/wCZKXNO.png)
+
+Feedback
+================
+
+If you run into any issues head on over to the issues page and submit an issue. If you have any general feedback, add a comment to [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1). 
