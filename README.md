@@ -88,20 +88,20 @@ If we connect to Neo4j via the Neo4j shell tool we can see that `Person` nodes n
     NOTE: Remote Neo4j graph database service 'shell' at port 1337
 
     neo4j-sh (?)$ MATCH n WHERE HAS(n.weight) RETURN n ORDER BY n.weight DESC LIMIT 10;
-    +------------------------------------------------------------------------+
-    | n                                                                      |
-    +------------------------------------------------------------------------+
-    | Node[71]{name:"Tom Hanks",born:1956,weight:4.642800717539658}          |
-    | Node[242]{name:"Tom Hanks",born:1956,weight:4.642800717539658}         |
-    | Node[1]{name:"Keanu Reeves",born:1964,weight:2.605304495549113}        |
-    | Node[172]{name:"Keanu Reeves",born:1964,weight:2.605304495549113}      |
-    | Node[22]{name:"Cuba Gooding Jr.",born:1968,weight:2.5655048212974223}  |
-    | Node[193]{name:"Cuba Gooding Jr.",born:1968,weight:2.5655048212974223} |
-    | Node[34]{name:"Meg Ryan",born:1961,weight:2.52628473708215}            |
-    | Node[205]{name:"Meg Ryan",born:1961,weight:2.52628473708215}           |
-    | Node[16]{name:"Tom Cruise",born:1962,weight:2.430592498009265}         |
-    | Node[187]{name:"Tom Cruise",born:1962,weight:2.430592498009265}        |
-    +------------------------------------------------------------------------+
+    +-----------------------------------------------------------------------+
+    | n                                                                     |
+    +-----------------------------------------------------------------------+
+    | Node[71]{name:"Tom Hanks",born:1956,weight:4.642800717539658}         |
+    | Node[1]{name:"Keanu Reeves",born:1964,weight:2.605304495549113}       |
+    | Node[22]{name:"Cuba Gooding Jr.",born:1968,weight:2.5655048212974223} |
+    | Node[34]{name:"Meg Ryan",born:1961,weight:2.52628473708215}           |
+    | Node[16]{name:"Tom Cruise",born:1962,weight:2.430592498009265}        |
+    | Node[19]{name:"Kevin Bacon",born:1958,weight:2.0886893112867035}      |
+    | Node[17]{name:"Jack Nicholson",born:1937,weight:1.9641313625284538}   |
+    | Node[120]{name:"Ben Miles",born:1967,weight:1.8680986516285438}       |
+    | Node[4]{name:"Hugo Weaving",born:1960,weight:1.8515582875810466}      |
+    | Node[20]{name:"Kiefer Sutherland",born:1966,weight:1.784065038526406} |
+    +-----------------------------------------------------------------------+
     10 rows
 
 1.0.0 Roadmap
