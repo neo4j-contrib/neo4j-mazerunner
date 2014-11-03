@@ -73,13 +73,20 @@ To start Mazerunner on the provisioned development environment, run the followin
 
     [*] Waiting for messages. To exit press CTRL+C
 
-This script will also import a sample movie data set into a Neo4j instance running on port `7474`.
+Only run this script once, as it imports the Neo4j movies sample dataset. It also runs the following query:
 
-On another SSH session we can now send a job for mazerunner to execute like this:
+#### Create a KNOWS relationship between all actors who acted in the same movie
 
-    $ curl -v http://localhost:7474/service/mazerunner/pagerank
+    MATCH (a1:Person)-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors)
+    CREATE (a1)-[:KNOWS]->(coActors);
 
-This will run the Page Rank algorithm over it and write the results back into Neo4j.
+By doing this, we create a direct link between actors that can be used to create a PageRank of the most valuable actors to work with. 
+
+To start the PageRank job, on the host OS, navigate to the following URL:
+
+    http://localhost:65074/service/mazerunner/pagerank
+
+This will run the PageRank algorithm on actors who know eachother and then write the results back into Neo4j.
 
 If we connect to Neo4j via the Neo4j shell tool we can see that `Person` nodes now have a `weight` property:
 
