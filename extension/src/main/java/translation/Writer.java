@@ -1,8 +1,8 @@
 package translation;
 
-import messaging.Worker;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
+import messaging.Worker;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.neo4j.graphdb.Direction;
@@ -38,7 +38,16 @@ public class Writer {
 
     private static final String EDGE_LIST_RELATIVE_FILE_PATH = "/neo4j/mazerunner/edgeList.txt";
 
-    public static void exportSubgraphToHDFS(GraphDatabaseService db) throws IOException, URISyntaxException {
+    public static void startAgentJob(GraphDatabaseService db) throws IOException, URISyntaxException {
+
+        // Export the subgraph to HDFS
+        Path pt = exportSubgraphToHDFS(db);
+
+        // Send message to the Spark graph processor
+        Worker.sendMessage(pt.toString());
+    }
+
+    public static Path exportSubgraphToHDFS(GraphDatabaseService db) throws IOException, URISyntaxException {
         FileSystem fs = FileUtil.getHadoopFileSystem();
         Path pt = new Path(ConfigurationLoader.getInstance().getHadoopHdfsUri() + EDGE_LIST_RELATIVE_FILE_PATH);
         BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(pt)));
@@ -88,7 +97,6 @@ public class Writer {
         tx.success();
         tx.close();
 
-        // Send message to the Spark graph processor
-        Worker.sendMessage(pt.toString());
+        return pt;
     }
 }

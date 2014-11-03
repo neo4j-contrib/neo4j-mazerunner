@@ -45,7 +45,7 @@ public class MazerunnerService {
 
         // Export graph to HDFS and send message to Spark when complete
         try {
-            Writer.exportSubgraphToHDFS(db);
+            Writer.startAgentJob(db);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {

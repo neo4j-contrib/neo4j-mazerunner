@@ -2,7 +2,7 @@ package translation;
 
 import config.ConfigurationLoader;
 import junit.framework.TestCase;
-import org.junit.Ignore;
+import org.junit.Test;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -16,22 +16,25 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class WriterTest extends TestCase {
 
-    @Ignore
+    @Test
     public void testWriteToHadoop() throws Exception {
         GraphDatabaseService db = setUpDb();
-        ConfigurationLoader.testPropertyAccess = false;
+
+        // Use test configurations
+        ConfigurationLoader.testPropertyAccess = true;
 
         Transaction tx = db.beginTx();
         List<Node> nodes = new ArrayList<>();
 
-        int max = 90000;
-        // Create 1000 nodes
+        int max = 30000;
+
+        // Create nodes
         for (int i = 0; i < max; i++) {
             nodes.add(db.createNode());
             nodes.get(i).addLabel(DynamicLabel.label("Node"));
         }
 
-        // Create a biparite graph
+        // Create PageRank test graph
         for (int i = 0; i < (max / 2) - 1; i++) {
             nodes.get(i).createRelationshipTo(nodes.get(i + (max / 2)), withName("CONNECTED_TO"));
             nodes.get(i + (max / 2)).createRelationshipTo(nodes.get(i + 1), withName("CONNECTED_TO"));
@@ -41,11 +44,10 @@ public class WriterTest extends TestCase {
         tx.close();
 
         Writer.exportSubgraphToHDFS(db);
-
     }
 
     private static GraphDatabaseService setUpDb()
     {
-        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().loadPropertiesFromFile("/Users/kennybastani/downloads/neo4j-community-2.1.3/conf/neo4j.properties").newGraphDatabase();
+        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
 }

@@ -3,7 +3,7 @@ package org.mazerunner.core.processor;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.mazerunner.core.config.ConfigurationLoader;
-import org.mazerunner.core.scala.RunPageRank;
+import org.mazerunner.core.algorithms.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
