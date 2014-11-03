@@ -42,7 +42,7 @@ Sandbox installation
 
 The Mazerunner development environment sandbox requires [Vagrant](https://docs.vagrantup.com/v2/getting-started/index.html). To get started, visit the provided Vagrant link and follow the directions to install the platform.
 
-After Vagrant is installed on your machine, close this repository and run the following command from the Mazerunner repository root:
+After Vagrant is installed on your machine, clone this repository and run the following command from the Mazerunner repository root:
 
     $ vagrant up --provision
 
