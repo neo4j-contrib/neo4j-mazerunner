@@ -104,6 +104,8 @@ If we connect to Neo4j via the Neo4j shell tool we can see that `Person` nodes n
     +-----------------------------------------------------------------------+
     10 rows
 
+You can also access the Neo4j Browser from the host OS at the URL: http://localhost:65074
+
 1.0.0 Roadmap
 ================
 
