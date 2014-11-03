@@ -3,8 +3,6 @@ Mazerunner for Neo4j
 
 Mazerunner extends a [Neo4j graph database](http://www.neo4j.com) to run scheduled big data graph compute algorithms at scale with HDFS and Apache Spark.
 
-![Neo4j Mazerunner](http://i.imgur.com/wCZKXNO.png)
-
 What is Mazerunner?
 ================
 
@@ -15,7 +13,9 @@ How does it work?
 
 Mazerunner uses a message broker to distribute graph processing jobs to [Apache Spark's GraphX](https://spark.apache.org/graphx/) module. When an agent job is dispatched, a subgraph is exported from Neo4j and written to [Apache Hadoop HDFS](https://hadoop.apache.org/docs/r2.4.1/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html).
 
-Mazerunner runs a controller service that listens for any agent jobs dispatched from Neo4j. After Neo4j exports a subgraph to HDFS, the Mazerunner service is notified to begin processing that data. The Mazerunner service will then start a distributed graph processing algorithm using Scala and GraphX. The GraphX algorithm is serialized and dispatched to Apache Spark for processing. Once the Apache Spark job completes, the results are written back to HDFS as a Key-Value list of property updates to be applied back to Neo4j.
+After Neo4j exports a subgraph to HDFS, a separate Mazerunner service for Spark is notified to begin processing that data. The Mazerunner service will then start a distributed graph processing algorithm using Scala and Spark's GraphX module. The GraphX algorithm is serialized and dispatched to Apache Spark for processing. 
+
+Once the Apache Spark job completes, the results are written back to HDFS as a Key-Value list of property updates to be applied back to Neo4j.
 
 Neo4j is then notified that a property update list is available from Apache Spark on HDFS. Neo4j batch imports the results and applies the updates back to the original graph.
 
@@ -79,3 +79,5 @@ All other dependencies included in the Neo4j Mazerunner distribution are Apache 
 * Apache Spark 1.1.0 (Apache License)
 * RabbitMQ (Mozilla Public License)
 * See `pom.xml` for other bundled dependencies
+
+![Neo4j Mazerunner](http://i.imgur.com/wCZKXNO.png)
