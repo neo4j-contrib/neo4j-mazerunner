@@ -58,3 +58,24 @@ Start Mazerunner
 To start Mazerunner on the provisioned development environment, run the following command after remoting into the machine via `vagrant ssh`:
 
     $ sh neo4j-mazerunner/sbin/mazerunner.sh
+
+1.0.0 Roadmap
+================
+
+The roadmap for 1.0.0-M01 milestone can be found here: [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1)
+
+To add feature requests to this list, please open an issue against the `Mazerunner Roadmap` label.
+
+Licensing
+================
+
+Neo4j is an open source product. Neo4j supports a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from Neo Technology. The Neo4j Mazerunner project ships with a community edition of Neo4j under GPLv3 license.
+
+Mazerunner is an open source Neo4j community project. As an extension to Neo4j, all contributed code is permissively licensed under an [Apache License](https://github.com/kbastani/neo4j-mazerunner/blob/master/LICENSE).
+
+All other dependencies included in the Neo4j Mazerunner distribution are Apache License or another form of permissive license. These dependencies include:
+
+* Apache Hadoop 2.4.1 (Apache License)
+* Apache Spark 1.1.0 (Apache License)
+* RabbitMQ (Mozilla Public License)
+* See `pom.xml` for other bundled dependencies
