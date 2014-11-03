@@ -28,4 +28,4 @@ echo "========================="
 echo "To start a PageRank job, access the Mazerunner PageRank endpoint"
 echo "Example: curl http://localhost:7474/service/mazerunner/pagerank"
 
-sudo su root -c -l "mvn -q exec:java"
+sudo su root -c -l "mvn -q compile exec:java"
