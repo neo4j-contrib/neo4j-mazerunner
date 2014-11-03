@@ -13,7 +13,7 @@ Mazerunner is a ![Neo4j unmanaged extension](http://neo4j.com/docs/stable/server
 How does it work?
 ================
 
-Mazerunner uses a message broker to distribute graph processing jobs to ![Apache Spark's GraphX](https://spark.apache.org/graphx/) module. When an agent job is dispatched, a subgraph is exported from Neo4j and written to ![Apache Hadoop HDFS].
+Mazerunner uses a message broker to distribute graph processing jobs to ![Apache Spark's GraphX](https://spark.apache.org/graphx/) module. When an agent job is dispatched, a subgraph is exported from Neo4j and written to ![Apache Hadoop HDFS](https://hadoop.apache.org/docs/r2.4.1/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html).
 
 Mazerunner runs a controller service that listens for any agent jobs dispatched from Neo4j. After Neo4j exports a subgraph to HDFS, the Mazerunner service is notified to begin processing that data. The Mazerunner service will then start a distributed graph processing algorithm using Scala and GraphX. The GraphX algorithm is serialized and dispatched to Apache Spark for processing. Once the Apache Spark job completes, the results are written back to HDFS as a Key-Value list of property updates to be applied back to Neo4j.
 
