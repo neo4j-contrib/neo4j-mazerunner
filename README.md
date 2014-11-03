@@ -88,7 +88,7 @@ To start the PageRank job, on the host OS, navigate to the following URL:
 
 This will run the PageRank algorithm on actors who know eachother and then write the results back into Neo4j.
 
-If we connect to Neo4j via the Neo4j shell tool we can see that `Person` nodes now have a `weight` property:
+If we connect to Neo4j via the Neo4j shell tool from the sandbox (`vagrant ssh`), we can see that `Person` nodes now have a `weight` property:
 
     $ echo "MATCH n WHERE HAS(n.weight) RETURN n ORDER BY n.weight DESC LIMIT 10;" | /var/lib/neo4j/bin/neo4j-shell
     Welcome to the Neo4j Shell! Enter 'help' for a list of commands
@@ -111,7 +111,7 @@ If we connect to Neo4j via the Neo4j shell tool we can see that `Person` nodes n
     +-----------------------------------------------------------------------+
     10 rows
 
-You can also access the Neo4j Browser from the host OS at the URL: http://localhost:65074
+You can also access the Neo4j Browser from the host OS at the URL: `http://localhost:65074` and run the same query in the browser.
 
 1.0.0 Roadmap
 ================
