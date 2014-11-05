@@ -1,5 +1,7 @@
 package config;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -59,8 +61,10 @@ public class ConfigurationLoader {
 
     public void initialize() throws IOException {
         Properties prop = new Properties();
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        InputStream stream = loader.getResourceAsStream("mazerunner.properties");
+//        String storeLocation = ((GraphDatabaseAPI)db).getStoreDir();
+//        System.out.println(storeLocation);
+        System.out.println(new File("../").getAbsolutePath());
+        InputStream stream = new FileInputStream("conf/mazerunner.properties");
         prop.load(stream);
 
         hadoopSitePath = prop.getProperty(HADOOP_CORE_SITE_KEY);
