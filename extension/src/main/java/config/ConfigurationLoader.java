@@ -61,8 +61,6 @@ public class ConfigurationLoader {
 
     public void initialize() throws IOException {
         Properties prop = new Properties();
-//        String storeLocation = ((GraphDatabaseAPI)db).getStoreDir();
-//        System.out.println(storeLocation);
         System.out.println(new File("../").getAbsolutePath());
         InputStream stream = new FileInputStream("conf/mazerunner.properties");
         prop.load(stream);
@@ -72,6 +70,8 @@ public class ConfigurationLoader {
         hadoopHdfsUri = java.net.URLDecoder.decode(prop.getProperty(HADOOP_HDFS_URI), "UTF-8");
         mazerunnerRelationshipType = prop.getProperty(MAZERUNNER_RELATIONSHIP_TYPE_KEY);
         rabbitmqNodename = prop.getProperty(RABBITMQ_NODENAME_KEY);
+
+        stream.close();
     }
 
     public void initializeTest()
@@ -85,6 +85,10 @@ public class ConfigurationLoader {
 
     public String getMazerunnerRelationshipType() {
         return mazerunnerRelationshipType;
+    }
+
+    public void setMazerunnerRelationshipType(String relationshipType) {
+        mazerunnerRelationshipType = relationshipType;
     }
 
     public String getHadoopSitePath() {

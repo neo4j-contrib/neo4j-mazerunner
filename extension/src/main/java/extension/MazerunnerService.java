@@ -1,13 +1,14 @@
 package extension;
 
 
+import config.ConfigurationLoader;
 import messaging.BatchWriterService;
-import translation.Writer;
-import com.google.gson.Gson;
 import org.neo4j.graphdb.GraphDatabaseService;
+import translation.Writer;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -29,19 +30,23 @@ public class MazerunnerService {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/warmup")
     public Response warmup(@Context GraphDatabaseService db) {
-
-        Gson gson = new Gson();
-
         return Response.status(200)
-                .entity(gson.toJson("{ result: 'success' }"))
+                .entity("{ result: 'success' }")
                 .type(MediaType.APPLICATION_JSON).build();
     }
 
-
+    /**
+     * Submit a PageRank job to Spark for processing.
+     * @param relationship The name of the relationship type to extract from Neo4j.
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pagerank")
-    public Response pageRank(@Context GraphDatabaseService db) {
+    @Path("/pagerank/{relationship}")
+    public Response pageRank(@PathParam("relationship") String relationship, @Context GraphDatabaseService db) {
+
+        // Update relationship configuration
+        if(relationship != null && !relationship.isEmpty())
+            ConfigurationLoader.getInstance().setMazerunnerRelationshipType(relationship);
 
         // Export graph to HDFS and send message to Spark when complete
         try {
@@ -52,10 +57,8 @@ public class MazerunnerService {
             e.printStackTrace();
         }
 
-        Gson gson = new Gson();
-
         return Response.status(200)
-                .entity(gson.toJson("{ result: 'success' }"))
+                .entity("{ result: 'success' }")
                 .type(MediaType.APPLICATION_JSON).build();
     }
 
