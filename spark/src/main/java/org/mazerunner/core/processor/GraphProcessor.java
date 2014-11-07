@@ -24,8 +24,20 @@ import java.net.URISyntaxException;
 public class GraphProcessor {
 
     public static final String PROPERTY_GRAPH_UPDATE_PATH = "/neo4j/mazerunner/propertyUpdateList.txt";
+    public static JavaSparkContext javaSparkContext = null;
 
     public static void processEdgeList(String hdfsPath) throws IOException, URISyntaxException {
+        if(javaSparkContext == null) {
+            initializeSparkContext();
+        }
+
+        String results = RunPageRank.pageRank(javaSparkContext.sc(), hdfsPath);
+
+        // Write results to HDFS
+        org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH, results);
+    }
+
+    private static void initializeSparkContext() {
         String appName = "mazerunner";
         SparkConf conf = new SparkConf().setAppName(appName).set("spark.master", "local[8]")
                 .set("spark.locality.wait", "3000")
@@ -34,11 +46,6 @@ public class GraphProcessor {
                 .set("spark.executor.extraClassPath", "/spark-1.1.0/lib/*")
                 .set("spark.files.userClassPathFirst", "true");
 
-        JavaSparkContext sc = new JavaSparkContext(conf);
-
-        String results = RunPageRank.pageRank(sc.sc(), hdfsPath);
-
-        // Write results to HDFS
-        org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH, results);
+        javaSparkContext = new JavaSparkContext(conf);
     }
 }
