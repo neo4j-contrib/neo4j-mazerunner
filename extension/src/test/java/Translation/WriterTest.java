@@ -23,10 +23,16 @@ public class WriterTest extends TestCase {
         // Use test configurations
         ConfigurationLoader.testPropertyAccess = true;
 
+        createSampleGraph(db);
+
+        Writer.exportSubgraphToHDFS(db);
+    }
+
+    private void createSampleGraph(GraphDatabaseService db) {
         Transaction tx = db.beginTx();
         List<Node> nodes = new ArrayList<>();
 
-        int max = 30000;
+        int max = 100000;
 
         // Create nodes
         for (int i = 0; i < max; i++) {
@@ -42,8 +48,18 @@ public class WriterTest extends TestCase {
 
         tx.success();
         tx.close();
+    }
 
-        Writer.exportSubgraphToHDFS(db);
+    @Test
+    public void testParallelWriteToHadoop() throws Exception {
+        GraphDatabaseService db = setUpDb();
+
+        // Use test configurations
+        ConfigurationLoader.testPropertyAccess = true;
+
+        createSampleGraph(db);
+
+        Writer.exportSubgraphToHDFSParallel(db);
     }
 
     private static GraphDatabaseService setUpDb()

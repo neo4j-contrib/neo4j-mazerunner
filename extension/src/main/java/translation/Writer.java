@@ -18,6 +18,10 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.concurrent.ForkJoinPool;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
@@ -37,14 +41,60 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 public class Writer {
 
     private static final String EDGE_LIST_RELATIVE_FILE_PATH = "/neo4j/mazerunner/edgeList.txt";
+    public static Integer counter = 0;
 
     public static void startAgentJob(GraphDatabaseService db) throws IOException, URISyntaxException {
 
         // Export the subgraph to HDFS
-        Path pt = exportSubgraphToHDFS(db);
+        Path pt = exportSubgraphToHDFSParallel(db);
 
         // Send message to the Spark graph processor
         Worker.sendMessage(pt.toString());
+    }
+
+    public static Path exportSubgraphToHDFSParallel(GraphDatabaseService db) throws  IOException, URISyntaxException {
+        FileSystem fs = FileUtil.getHadoopFileSystem();
+        Path pt = new Path(ConfigurationLoader.getInstance().getHadoopHdfsUri() + EDGE_LIST_RELATIVE_FILE_PATH);
+        BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(pt)));
+
+        Transaction tx = db.beginTx();
+
+        // Get all nodes in the graph
+        Iterable<Node> nodes = GlobalGraphOperations.at(db)
+                .getAllNodes();
+
+        Integer nodeCount = 0;
+
+        br.write("# Adacency list" + "\n");
+        int size = IteratorUtil.count(nodes.iterator());
+
+        List<Spliterator> spliteratorList = new ArrayList<>();
+        boolean hasSpliterator = true;
+        Spliterator nodeSpliterator = nodes.spliterator();
+
+        while(hasSpliterator)
+        {
+            Spliterator localSpliterator = nodeSpliterator.trySplit();
+            hasSpliterator = localSpliterator != null;
+            if(hasSpliterator)
+                spliteratorList.add(localSpliterator);
+        }
+
+        counter = 0;
+        // Fork join
+        ParallelWriter parallelWriter = new ParallelWriter(spliteratorList.toArray(new Spliterator[spliteratorList.size()]), 0, spliteratorList.size(), db, br, nodeCount, size);
+        ForkJoinPool pool = new ForkJoinPool();
+        pool.invoke(parallelWriter);
+
+        tx.success();
+        tx.close();
+
+        System.out.println("Mazerunner Export Status: " + MessageFormat.format("{0,number,#.##%}", 1.0));
+
+        br.flush();
+        br.close();
+
+        return pt;
     }
 
     public static Path exportSubgraphToHDFS(GraphDatabaseService db) throws IOException, URISyntaxException {
@@ -65,6 +115,12 @@ public class Writer {
         final int[] pathCount = {0};
         int pathCountBlocks = 10000;
 
+        int size = IteratorUtil.count(nodes.iterator());
+
+        System.out.println(nodes.spliterator().trySplit().estimateSize());
+
+        // Fork join
+
         nodes.iterator().forEachRemaining(n -> {
             // Filter nodes by all paths connected by the relationship type described in the configuration properties
             Iterable<org.neo4j.graphdb.Path> nPaths = db.traversalDescription()
@@ -79,9 +135,9 @@ public class Writer {
                     String line = path.startNode().getId() + " " + path.endNode().getId();
                     br.write(line + "\n");
                     pathCount[0]++;
-                    if(pathCount[0] > pathCountBlocks) {
+                    if (pathCount[0] > pathCountBlocks) {
                         pathCount[0] = 0;
-                        System.out.println("Mazerunner Export Status: " + MessageFormat.format("{0,number,#%}", ((double)nodeCount[0] / (double)nodeTotal)));
+                        System.out.println("Mazerunner Export Status: " + MessageFormat.format("{0,number,#%}", ((double) nodeCount[0] / (double) nodeTotal)));
                     }
                 } catch (Exception ex) {
                     System.out.println(ex.getMessage());
