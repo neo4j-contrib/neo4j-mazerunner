@@ -3,6 +3,7 @@ package translation;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import junit.framework.TestCase;
+import models.ProcessorMessage;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
@@ -100,10 +101,11 @@ public class WriterTest extends TestCase {
 
         writeListFile(path, nodeList);
 
-        BufferedReader br = FileUtil.readGraphAdjacencyList(path);
+        ProcessorMessage processorMessage = new ProcessorMessage(path, "pagerank");
+        BufferedReader br = FileUtil.readGraphAdjacencyList(processorMessage);
 
         // Test parallel update
-        Writer.asyncUpdate(br, db);
+        Writer.asyncUpdate(br, db, processorMessage.getAnalysis());
     }
 
     /**

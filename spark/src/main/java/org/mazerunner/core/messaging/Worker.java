@@ -1,10 +1,12 @@
 package org.mazerunner.core.messaging;
 
+import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 import org.mazerunner.core.config.ConfigurationLoader;
+import org.mazerunner.core.models.ProcessorMessage;
 import org.mazerunner.core.processor.GraphProcessor;
 
 /**
@@ -48,8 +50,12 @@ public class Worker {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
             String message = new String(delivery.getBody());
 
+            // Deserialize message
+            Gson gson = new Gson();
+            ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
+
             // Run PageRank
-            GraphProcessor.processEdgeList(message);
+            GraphProcessor.processEdgeList(processorMessage);
 
             System.out.println(" [x] Received '" + message + "'");
         }

@@ -33,6 +33,7 @@ public class ParallelBatchTransaction extends RecursiveAction {
     private int mLength;
     private int reportBlock;
     private int threshold;
+    private String analysis;
 
     /**
      * Instantiate an instance of ParallelBatchTransaction to perform distributed computation.
@@ -42,14 +43,16 @@ public class ParallelBatchTransaction extends RecursiveAction {
      * @param db A reference to the Neo4j graph database service to apply updates to.
      * @param reportBlock The maximum number of updates to apply before reporting to the status log.
      * @param threshold The threshold is the unchanged size of the initial Spliterator[] from the original method call context.
+     * @param analysis
      */
-    public ParallelBatchTransaction(Spliterator<String>[] src, int start, int length, GraphDatabaseService db, int reportBlock, int threshold) {
+    public ParallelBatchTransaction(Spliterator<String>[] src, int start, int length, GraphDatabaseService db, int reportBlock, int threshold, String analysis) {
         this.mSource = src;
         this.db = db;
         this.mStart = start;
         this.mLength = length;
         this.reportBlock = reportBlock;
         this.threshold = threshold;
+        this.analysis = analysis;
     }
 
     /**
@@ -69,8 +72,8 @@ public class ParallelBatchTransaction extends RecursiveAction {
 
         int split = mLength / 2;
 
-        invokeAll(new ParallelBatchTransaction(mSource, mStart, split, db, reportBlock, threshold),
-                  new ParallelBatchTransaction(mSource, mStart + split, mLength - split, db, reportBlock, threshold));
+        invokeAll(new ParallelBatchTransaction(mSource, mStart, split, db, reportBlock, threshold, analysis),
+                  new ParallelBatchTransaction(mSource, mStart + split, mLength - split, db, reportBlock, threshold, analysis));
     }
 
     /**
@@ -84,7 +87,7 @@ public class ParallelBatchTransaction extends RecursiveAction {
 
         for (int i = mStart; i < mStart + mLength; i++) {
             mSource[i].forEachRemaining(line -> {
-                Writer.updateBlockForRow(line, db, reportBlock);
+                Writer.updateBlockForRow(line, db, reportBlock, analysis);
             });
         }
 

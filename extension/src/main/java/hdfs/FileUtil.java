@@ -1,6 +1,7 @@
 package hdfs;
 
 import config.ConfigurationLoader;
+import models.ProcessorMessage;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -27,14 +28,14 @@ public class FileUtil {
 
     /**
      * Produces a buffered stream reader of a HDFS text file containing an adjacency list.
-     * @param path The path to the text file containing an adjacency list.
+     * @param processorMessage The path to the text file containing an adjacency list.
      * @return Returns a BufferedReader of the input stream loaded in from the path.
      * @throws IOException
      * @throws URISyntaxException
      */
-    public static BufferedReader readGraphAdjacencyList(String path) throws IOException, URISyntaxException {
+    public static BufferedReader readGraphAdjacencyList(ProcessorMessage processorMessage) throws IOException, URISyntaxException {
         FileSystem fs = getHadoopFileSystem();
-        Path filePath = new Path(path);
+        Path filePath = new Path(processorMessage.getPath());
         FSDataInputStream inputStream = fs.open(filePath);
 
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));

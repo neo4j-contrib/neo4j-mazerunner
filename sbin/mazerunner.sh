@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Import Neo4j sample dataset
 neo4j-shell -file /vagrant/sbin/movie-dataset.cql

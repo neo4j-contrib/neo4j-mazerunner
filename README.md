@@ -22,7 +22,14 @@ Neo4j is then notified that a property update list is available from Apache Spar
 Alpha version
 ================
 
-Mazerunner is currently in its alpha stages of development. For this initial release PageRank is the only available graph processing algorithm.
+Mazerunner is currently in its alpha stages of development.
+
+The following analysis algorithms are available:
+
+ * PageRank
+ * Triangle Count
+ * Connected Components
+ * Strongly Connected Components
 
 Sandbox
 ================
@@ -74,38 +81,45 @@ Only run this script once, as it imports the Neo4j movies sample dataset. It als
     MATCH (a1:Person)-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors)
     CREATE (a1)-[:KNOWS]->(coActors);
 
-By doing this, we create a direct link between actors that can be used to create a PageRank of the most valuable actors to work with. 
+By doing this, we create a direct link between actors that can be used to create a PageRank of the most valuable actors to work with.
 
 To start the PageRank job, on the host OS, navigate to the following URL:
 
     http://localhost:65074/service/mazerunner/pagerank/KNOWS
 
-This will run the PageRank algorithm on actors who know eachother and then write the results back into Neo4j.
+This will run the PageRank algorithm on actors who know each other and then write the results back into Neo4j.
 
-If we connect to Neo4j via the Neo4j shell tool from the sandbox (`vagrant ssh`), we can see that `Person` nodes now have a `weight` property:
+If we connect to Neo4j via the Neo4j shell tool from the sandbox (`vagrant ssh`), we can see that `Person` nodes now have a `pagerank` property:
 
-    $ echo "MATCH n WHERE HAS(n.weight) RETURN n ORDER BY n.weight DESC LIMIT 10;" | /var/lib/neo4j/bin/neo4j-shell
+    $ echo "MATCH n WHERE HAS(n.pagerank) RETURN n ORDER BY n.pagerank DESC LIMIT 10;" | /var/lib/neo4j/bin/neo4j-shell
     Welcome to the Neo4j Shell! Enter 'help' for a list of commands
     NOTE: Remote Neo4j graph database service 'shell' at port 1337
 
-    neo4j-sh (?)$ MATCH n WHERE HAS(n.weight) RETURN n ORDER BY n.weight DESC LIMIT 10;
+    neo4j-sh (?)$ MATCH n WHERE HAS(n.pagerank) RETURN n ORDER BY n.pagerank DESC LIMIT 10;
     +-----------------------------------------------------------------------+
     | n                                                                     |
     +-----------------------------------------------------------------------+
-    | Node[71]{name:"Tom Hanks",born:1956,weight:4.642800717539658}         |
-    | Node[1]{name:"Keanu Reeves",born:1964,weight:2.605304495549113}       |
-    | Node[22]{name:"Cuba Gooding Jr.",born:1968,weight:2.5655048212974223} |
-    | Node[34]{name:"Meg Ryan",born:1961,weight:2.52628473708215}           |
-    | Node[16]{name:"Tom Cruise",born:1962,weight:2.430592498009265}        |
-    | Node[19]{name:"Kevin Bacon",born:1958,weight:2.0886893112867035}      |
-    | Node[17]{name:"Jack Nicholson",born:1937,weight:1.9641313625284538}   |
-    | Node[120]{name:"Ben Miles",born:1967,weight:1.8680986516285438}       |
-    | Node[4]{name:"Hugo Weaving",born:1960,weight:1.8515582875810466}      |
-    | Node[20]{name:"Kiefer Sutherland",born:1966,weight:1.784065038526406} |
+    | Node[71]{name:"Tom Hanks",born:1956,pagerank:4.642800717539658}         |
+    | Node[1]{name:"Keanu Reeves",born:1964,pagerank:2.605304495549113}       |
+    | Node[22]{name:"Cuba Gooding Jr.",born:1968,pagerank:2.5655048212974223} |
+    | Node[34]{name:"Meg Ryan",born:1961,pagerank:2.52628473708215}           |
+    | Node[16]{name:"Tom Cruise",born:1962,pagerank:2.430592498009265}        |
+    | Node[19]{name:"Kevin Bacon",born:1958,pagerank:2.0886893112867035}      |
+    | Node[17]{name:"Jack Nicholson",born:1937,pagerank:1.9641313625284538}   |
+    | Node[120]{name:"Ben Miles",born:1967,pagerank:1.8680986516285438}       |
+    | Node[4]{name:"Hugo Weaving",born:1960,pagerank:1.8515582875810466}      |
+    | Node[20]{name:"Kiefer Sutherland",born:1966,pagerank:1.784065038526406} |
     +-----------------------------------------------------------------------+
     10 rows
 
 You can also access the Neo4j Browser from the host OS at the URL: `http://localhost:65074` and run the same query in the browser.
+
+To run other graph analysis algorithms, use the following endpoints:
+
+ * http://localhost:65074/service/mazerunner/pagerank/KNOWS
+ * http://localhost:65074/service/mazerunner/triangle_count/KNOWS
+ * http://localhost:65074/service/mazerunner/connected_components/KNOWS
+ * http://localhost:65074/service/mazerunner/strongly_connected_components/KNOWS
 
 Roadmap
 ================
@@ -124,4 +138,4 @@ This library is licensed under the Apache License, Version 2.0.
 Feedback
 ================
 
-If you run into any issues head on over to the issues page and submit an issue. If you have any general feedback, add a comment to [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1). 
+If you run into any issues head on over to the issues page and submit an issue. If you have any general feedback, add a comment to [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1).

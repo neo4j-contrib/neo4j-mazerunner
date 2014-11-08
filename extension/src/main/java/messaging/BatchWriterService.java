@@ -1,18 +1,18 @@
 package messaging;
 
 import com.google.common.util.concurrent.AbstractScheduledService;
+import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
+import models.ProcessorMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import translation.Writer;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -50,7 +50,7 @@ public class BatchWriterService extends AbstractScheduledService {
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, EXCHANGE_NAME, "");
 
-        System.out.println(" [*] Waiting for messages.");
+        System.out.println(" [*] Waiting for processor messages.");
 
         QueueingConsumer consumer = new QueueingConsumer(channel);
         channel.basicConsume(queueName, true, consumer);
@@ -59,57 +59,20 @@ public class BatchWriterService extends AbstractScheduledService {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
             String message = new String(delivery.getBody());
 
-            System.out.println(" [x] Received '" + message + "'");
+            System.out.println(" [x] Received processor message '" + message + "'");
+
+            // Deserialize the processor message
+            Gson gson = new Gson();
+            ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
 
             // Open the node property update list file from HDFS
-            BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(message);
+            BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
 
-            Writer.asyncUpdate(bufferedReader, graphDb);
+            // Stream the the updates as parallel transactions to Neo4j
+            Writer.asyncUpdate(bufferedReader, graphDb, processorMessage.getAnalysis());
 
+            // Close the stream
             bufferedReader.close();
-        }
-    }
-
-
-
-    private void sequentialUpdate(BufferedReader bufferedReader) throws IOException {
-        String line = bufferedReader.readLine();
-        int blockSize = 10000;
-        int counter = 0;
-        int blockCounter = 0;
-
-        Transaction tx = graphDb.beginTx();
-
-        while (line != null) {
-
-            if (tx == null) {
-                tx = graphDb.beginTx();
-            }
-
-            line = bufferedReader.readLine();
-            if (line != null) {
-                String[] rowVal = line.split("\\s");
-                Long nodeId = Long.parseLong(rowVal[0]);
-                Double weight = Double.parseDouble(rowVal[1]);
-                graphDb.getNodeById(nodeId).setProperty("weight", weight);
-
-                counter++;
-
-                if (counter >= blockSize) {
-                    tx.success();
-                    tx.close();
-                    tx = null;
-                    blockCounter++;
-                    System.out.println(blockCounter);
-                    counter = 0;
-                }
-            }
-        }
-
-        if(tx != null)
-        {
-            tx.success();
-            tx.close();
         }
     }
 

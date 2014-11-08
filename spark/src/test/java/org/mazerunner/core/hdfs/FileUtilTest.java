@@ -19,6 +19,6 @@ public class FileUtilTest extends TestCase {
         FileUtil.writePropertyGraphUpdate(path, nodeList);
 
         // Validate node list
-        assertEquals(FileUtil.readGraphAdjacenyList(path), "# Node Property Value List" + "\n" + nodeList);
+        assertEquals(FileUtil.readHdfsFile(path), "# Node Property Value List" + "\n" + nodeList);
     }
 }

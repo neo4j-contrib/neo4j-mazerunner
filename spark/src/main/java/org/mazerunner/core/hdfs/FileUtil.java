@@ -1,11 +1,13 @@
 package org.mazerunner.core.hdfs;
 
+import com.google.gson.Gson;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.messaging.Sender;
+import org.mazerunner.core.models.ProcessorMessage;
 
 import java.io.*;
 import java.net.URI;
@@ -29,16 +31,21 @@ public class FileUtil {
 
     /**
      * Writes a property graph list as a result of a GraphX algorithm to HDFS.
-     * @param path The path to the HDFS file to be created.
+     * @param processorMessage The path to the HDFS file to be created.
      * @param nodeList The list of node IDs and properties to update in Neo4j.
      * @throws URISyntaxException
      * @throws IOException
      */
-    public static void writePropertyGraphUpdate(String path, String nodeList) throws URISyntaxException, IOException {
-        writeListFile(path, nodeList);
+    public static void writePropertyGraphUpdate(ProcessorMessage processorMessage, String nodeList) throws URISyntaxException, IOException {
+        // Write the nodeList results to HDFS
+        writeListFile(processorMessage.getPath(), nodeList);
+
+        // Serialize the processor message
+        Gson gson = new Gson();
+        String message = gson.toJson(processorMessage);
 
         // Notify Neo4j that a property update list is available for processing
-        Sender.sendMessage(path);
+        Sender.sendMessage(message);
     }
 
     /**
@@ -64,7 +71,14 @@ public class FileUtil {
         br.close();
     }
 
-    public static String readGraphAdjacenyList(String path) throws IOException, URISyntaxException {
+    /**
+     * Read the contents of a file and return the results as a string.
+     * @param path The path to the HDFS file to be created.
+     * @return Returns the full contents of an HDFS file.
+     * @throws IOException
+     * @throws URISyntaxException
+     */
+    public static String readHdfsFile(String path) throws IOException, URISyntaxException {
         FileSystem fs = getHadoopFileSystem();
         Path filePath = new Path(path);
         FSDataInputStream inputStream = fs.open(filePath);

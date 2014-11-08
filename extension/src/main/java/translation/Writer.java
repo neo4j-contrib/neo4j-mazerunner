@@ -1,8 +1,10 @@
 package translation;
 
+import com.google.gson.Gson;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import messaging.Worker;
+import models.ProcessorMessage;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.neo4j.graphdb.*;
@@ -45,13 +47,18 @@ public class Writer {
     public static Integer updateCounter = 0;
     public static Integer counter = 0;
 
-    public static void startAgentJob(GraphDatabaseService db) throws IOException, URISyntaxException {
+    public static void startAgentJob(GraphDatabaseService db, String type) throws IOException, URISyntaxException {
 
         // Export the subgraph to HDFS
         Path pt = exportSubgraphToHDFSParallel(db);
 
+        // Serialize processor message
+        ProcessorMessage message = new ProcessorMessage(pt.toString(), type);
+        Gson gson = new Gson();
+        String strMessage = gson.toJson(message);
+
         // Send message to the Spark graph processor
-        Worker.sendMessage(pt.toString());
+        Worker.sendMessage(strMessage);
     }
 
     public static Path exportSubgraphToHDFSParallel(GraphDatabaseService db) throws  IOException, URISyntaxException {
@@ -134,12 +141,12 @@ public class Writer {
         bufferedWriter.flush();
     }
 
-    public static void updateBlockForRow(String line, GraphDatabaseService db, int reportBlockSize) {
+    public static void updateBlockForRow(String line, GraphDatabaseService db, int reportBlockSize, String analysis) {
         if (line != null && !line.startsWith("#")) {
             String[] rowVal = line.split("\\s");
             Long nodeId = Long.parseLong(rowVal[0]);
             Double weight = Double.parseDouble(rowVal[1]);
-            db.getNodeById(nodeId).setProperty("weight", weight);
+            db.getNodeById(nodeId).setProperty(analysis, weight);
             Writer.updateCounter++;
             if(Writer.updateCounter % reportBlockSize == 0)
             {
@@ -148,7 +155,7 @@ public class Writer {
         }
     }
 
-    public static void asyncUpdate(BufferedReader bufferedReader, GraphDatabaseService graphDb) throws IOException {
+    public static void asyncUpdate(BufferedReader bufferedReader, GraphDatabaseService graphDb, String analysis) throws IOException {
 
         Integer reportBlockSize = 10000;
 
@@ -168,13 +175,16 @@ public class Writer {
         counter = 0;
         if(spliteratorList.size() > 4) {
             // Fork join
-            ParallelBatchTransaction parallelBatchTransaction = new ParallelBatchTransaction(spliteratorList.toArray(new Spliterator[spliteratorList.size()]), 0, spliteratorList.size(), graphDb, reportBlockSize, spliteratorList.size());
+            ParallelBatchTransaction parallelBatchTransaction =
+                    new ParallelBatchTransaction(spliteratorList.toArray(new Spliterator[spliteratorList.size()]),
+                            0, spliteratorList.size(), graphDb, reportBlockSize, spliteratorList.size(), analysis);
+
             ForkJoinPool pool = new ForkJoinPool();
             pool.invoke(parallelBatchTransaction);
         } else {
             // Sequential
             Transaction tx = graphDb.beginTx();
-            spliteratorList.forEach(sl -> sl.forEachRemaining(n -> updateBlockForRow(n, graphDb, reportBlockSize)));
+            spliteratorList.forEach(sl -> sl.forEachRemaining(n -> updateBlockForRow(n, graphDb, reportBlockSize, analysis)));
             tx.success();
             tx.close();
         }

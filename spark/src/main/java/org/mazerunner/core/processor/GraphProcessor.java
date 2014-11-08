@@ -2,8 +2,9 @@ package org.mazerunner.core.processor;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.mazerunner.core.algorithms;
 import org.mazerunner.core.config.ConfigurationLoader;
-import org.mazerunner.core.algorithms.*;
+import org.mazerunner.core.models.ProcessorMessage;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -24,17 +25,49 @@ import java.net.URISyntaxException;
 public class GraphProcessor {
 
     public static final String PROPERTY_GRAPH_UPDATE_PATH = "/neo4j/mazerunner/propertyUpdateList.txt";
+
+    public static final String TRIANGLE_COUNT = "triangle_count";
+    public static final String CONNECTED_COMPONENTS = "connected_components";
+    public static final String PAGERANK = "pagerank";
+    public static final String STRONGLY_CONNECTED_COMPONENTS = "strongly_connected_components";
+
     public static JavaSparkContext javaSparkContext = null;
 
-    public static void processEdgeList(String hdfsPath) throws IOException, URISyntaxException {
+    public static void processEdgeList(ProcessorMessage processorMessage) throws IOException, URISyntaxException {
         if(javaSparkContext == null) {
             initializeSparkContext();
         }
 
-        String results = RunPageRank.pageRank(javaSparkContext.sc(), hdfsPath);
+        String results = "";
+
+        // Routing
+        switch (processorMessage.getAnalysis()) {
+            case PAGERANK:
+                // Route to PageRank
+                results = algorithms.pageRank(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            case CONNECTED_COMPONENTS:
+                // Route to ConnectedComponents
+                results = algorithms.connectedComponents(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            case TRIANGLE_COUNT:
+                // Route to TriangleCount
+                results = algorithms.triangleCount(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            case STRONGLY_CONNECTED_COMPONENTS:
+                // Route to StronglyConnectedComponents
+                results = algorithms.stronglyConnectedComponents(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            default:
+                // Analysis does not exist
+                System.out.println("Did not recognize analysis key: " + processorMessage.getAnalysis());
+        }
+
+        // Set the output path
+        processorMessage.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH);
 
         // Write results to HDFS
-        org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH, results);
+        org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(processorMessage, results);
     }
 
     public static void initializeSparkContext() {

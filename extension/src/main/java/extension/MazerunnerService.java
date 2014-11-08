@@ -41,8 +41,8 @@ public class MazerunnerService {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/pagerank/{relationship}")
-    public Response pageRank(@PathParam("relationship") String relationship, @Context GraphDatabaseService db) {
+    @Path("/analysis/{type}/{relationship}")
+    public Response pageRank(@PathParam("type") String type, @PathParam("relationship") String relationship, @Context GraphDatabaseService db) {
 
         // Update relationship configuration
         if(relationship != null && !relationship.isEmpty())
@@ -50,7 +50,7 @@ public class MazerunnerService {
 
         // Export graph to HDFS and send message to Spark when complete
         try {
-            Writer.startAgentJob(db);
+            Writer.startAgentJob(db, type);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
