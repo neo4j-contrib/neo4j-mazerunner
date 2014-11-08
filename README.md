@@ -85,7 +85,7 @@ By doing this, we create a direct link between actors that can be used to create
 
 To start the PageRank job, on the host OS, navigate to the following URL:
 
-    http://localhost:65074/service/mazerunner/pagerank/KNOWS
+    http://localhost:65074/service/mazerunner/analysis/pagerank/KNOWS
 
 This will run the PageRank algorithm on actors who know each other and then write the results back into Neo4j.
 
@@ -116,10 +116,10 @@ You can also access the Neo4j Browser from the host OS at the URL: `http://local
 
 To run other graph analysis algorithms, use the following endpoints:
 
- * http://localhost:65074/service/mazerunner/pagerank/KNOWS
- * http://localhost:65074/service/mazerunner/triangle_count/KNOWS
- * http://localhost:65074/service/mazerunner/connected_components/KNOWS
- * http://localhost:65074/service/mazerunner/strongly_connected_components/KNOWS
+ * `http://localhost:65074/service/mazerunner/analysis/pagerank/KNOWS`
+ * `http://localhost:65074/service/mazerunner/analysis/triangle_count/KNOWS`
+ * `http://localhost:65074/service/mazerunner/analysis/connected_components/KNOWS`
+ * `http://localhost:65074/service/mazerunner/analysis/strongly_connected_components/KNOWS`
 
 Roadmap
 ================
