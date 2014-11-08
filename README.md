@@ -117,9 +117,24 @@ You can also access the Neo4j Browser from the host OS at the URL: `http://local
 To run other graph analysis algorithms, use the following endpoints:
 
  * `http://localhost:65074/service/mazerunner/analysis/pagerank/KNOWS`
+    * Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `pagerank`.
+    * The value of the `pagerank` property is a float data type, ex. `pagerank: 3.14159265359`.
+    * PageRank is used to find the relative importance of a node within a set of connected nodes.
  * `http://localhost:65074/service/mazerunner/analysis/triangle_count/KNOWS`
+    * Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `triangle_count`.
+    * The value of the `triangle_count` property is an integer data type, ex. `triangle_count: 2`.
+    * The value of `triangle_count` represents the count of the triangles that a node is connected to.
+    * A node is part of a triangle when it has two adjacent nodes with a relationship between them. The `triangle_count` property provides a measure of clustering for each node.
  * `http://localhost:65074/service/mazerunner/analysis/connected_components/KNOWS`
+    * Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `connected_components`.
+    * The value of `connected_components` property is an integer data type, ex. `connected_components: 181`.
+    * The value of `connected_components` represents the *Neo4j internal node ID* that has the lowest integer value for a set of connected nodes.
+    * Connected components are used to find isolated clusters, that is, a group of nodes that can reach every other node in the group through a *bidirectional* traversal.
  * `http://localhost:65074/service/mazerunner/analysis/strongly_connected_components/KNOWS`
+    * Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `strongly_connected_components`.
+    * The value of `strongly_connected_components` property is an integer data type, ex. `strongly_connected_components: 26`.
+    * The value of `strongly_connected_components` represents the *Neo4j internal node ID* that has the lowest integer value for a set of strongly connected nodes.
+    * Strongly connected components are used to find clusters, that is, a group of nodes that can reach every other node in the group through a *directed* traversal.
 
 Roadmap
 ================
