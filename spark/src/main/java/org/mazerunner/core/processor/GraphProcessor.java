@@ -37,7 +37,7 @@ public class GraphProcessor {
         org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH, results);
     }
 
-    private static void initializeSparkContext() {
+    public static void initializeSparkContext() {
         String appName = "mazerunner";
         SparkConf conf = new SparkConf().setAppName(appName).set("spark.master", "local[8]")
                 .set("spark.locality.wait", "3000")

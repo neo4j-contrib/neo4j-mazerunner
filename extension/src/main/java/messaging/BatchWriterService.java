@@ -9,8 +9,10 @@ import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import translation.Writer;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -62,47 +64,52 @@ public class BatchWriterService extends AbstractScheduledService {
             // Open the node property update list file from HDFS
             BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(message);
 
-            String line = bufferedReader.readLine();
-
-            int blockSize = 10000;
-            int counter = 0;
-            int blockCounter = 0;
-
-            Transaction tx = graphDb.beginTx();
-
-            while (line != null) {
-
-                if (tx == null) {
-                    tx = graphDb.beginTx();
-                }
-
-                line = bufferedReader.readLine();
-                if (line != null) {
-                    String[] rowVal = line.split("\\s");
-                    Long nodeId = Long.parseLong(rowVal[0]);
-                    Double weight = Double.parseDouble(rowVal[1]);
-                    graphDb.getNodeById(nodeId).setProperty("weight", weight);
-
-                    counter++;
-
-                    if (counter >= blockSize) {
-                        tx.success();
-                        tx.close();
-                        tx = null;
-                        blockCounter++;
-                        System.out.println(blockCounter);
-                        counter = 0;
-                    }
-                }
-            }
-
-            if(tx != null)
-            {
-                tx.success();
-                tx.close();
-            }
+            Writer.asyncUpdate(bufferedReader, graphDb);
 
             bufferedReader.close();
+        }
+    }
+
+
+
+    private void sequentialUpdate(BufferedReader bufferedReader) throws IOException {
+        String line = bufferedReader.readLine();
+        int blockSize = 10000;
+        int counter = 0;
+        int blockCounter = 0;
+
+        Transaction tx = graphDb.beginTx();
+
+        while (line != null) {
+
+            if (tx == null) {
+                tx = graphDb.beginTx();
+            }
+
+            line = bufferedReader.readLine();
+            if (line != null) {
+                String[] rowVal = line.split("\\s");
+                Long nodeId = Long.parseLong(rowVal[0]);
+                Double weight = Double.parseDouble(rowVal[1]);
+                graphDb.getNodeById(nodeId).setProperty("weight", weight);
+
+                counter++;
+
+                if (counter >= blockSize) {
+                    tx.success();
+                    tx.close();
+                    tx = null;
+                    blockCounter++;
+                    System.out.println(blockCounter);
+                    counter = 0;
+                }
+            }
+        }
+
+        if(tx != null)
+        {
+            tx.success();
+            tx.close();
         }
     }
 

@@ -36,6 +36,9 @@ public class Worker {
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, EXCHANGE_NAME, "");
 
+        // Initialize spark context
+        GraphProcessor.initializeSparkContext();
+
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
         QueueingConsumer consumer = new QueueingConsumer(channel);
