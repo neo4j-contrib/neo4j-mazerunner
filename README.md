@@ -78,7 +78,7 @@ By doing this, we create a direct link between actors that can be used to create
 
 To start the PageRank job, on the host OS, navigate to the following URL:
 
-    http://localhost:65074/service/mazerunner/pagerank
+    http://localhost:65074/service/mazerunner/pagerank/KNOWS
 
 This will run the PageRank algorithm on actors who know eachother and then write the results back into Neo4j.
 
