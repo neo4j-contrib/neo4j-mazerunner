@@ -4,6 +4,7 @@ import junit.framework.TestCase;
 import org.junit.Test;
 import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.hdfs.FileUtil;
+import org.mazerunner.core.models.ProcessorMessage;
 
 public class GraphProcessorTest extends TestCase {
 
@@ -21,6 +22,6 @@ public class GraphProcessorTest extends TestCase {
         // Test writing the PageRank result to HDFS path
         FileUtil.writeListFile(path, nodeList);
 
-        GraphProcessor.processEdgeList(path);
+        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.PAGERANK));
     }
 }

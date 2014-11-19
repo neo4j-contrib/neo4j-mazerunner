@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 
-# Import Neo4j sample dataset
-neo4j-shell -file /vagrant/sbin/movie-dataset.cql
-neo4j-shell -file /vagrant/sbin/actors-knows.cql
+sudo su root -c -l "/var/lib/neo4j/bin/neo4j start"
 
-sudo su root -c -l "hadoop-2.4.1/bin/hdfs namenode -format"
-sudo su root -c -l "yes y | sudo ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa"
-sudo su root -c -l "cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys"
-sudo su root -c -l "yes Yes | /home/vagrant/hadoop-2.4.1/sbin/start-dfs.sh"
-sudo su root -c -l "/var/lib/neo4j/bin/neo4j restart"
+# Start rabbitmq
+sudo su root -c -l "service rabbitmq-server start"
+
+# Import Neo4j sample dataset
+neo4j-shell -file /lib/neo4j-mazerunner/sbin/movie-dataset.cql
+neo4j-shell -file /lib/neo4j-mazerunner/sbin/actors-knows.cql
 
 # Warmup the service and start listening for messages
 curl http://localhost:7474/service/mazerunner/warmup
 
-cd neo4j-mazerunner/spark
+cd /lib/neo4j-mazerunner/spark
 echo ""
 echo ""
 echo "    __  ______ _____   __________  __  ___   ___   ____________  "

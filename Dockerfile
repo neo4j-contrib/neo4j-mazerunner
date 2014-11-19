@@ -65,8 +65,7 @@ RUN apt-get -y -qq install git
 # Clone Mazerunner
 RUN mkdir -p /lib
 WORKDIR /lib
-RUN git clone https://github.com/kbastani/neo4j-mazerunner.git
-WORKDIR /lib/neo4j-mazerunner
+COPY . /lib/neo4j-mazerunner
 COPY conf/neo4j /etc/neo4j
 
 WORKDIR /lib
@@ -90,23 +89,6 @@ RUN dpkg -i sbt-0.13.5.deb
 RUN apt-get -qq update
 RUN apt-get -y -q install sbt
 
-WORKDIR /lib
-
-# Install Hadoop 2.4.1
-RUN echo "Installing Hadoop 2.4.1..."
-RUN wget https://archive.apache.org/dist/hadoop/core/hadoop-2.4.1/hadoop-2.4.1.tar.gz
-RUN tar -xzf hadoop-2.4.1.tar.gz
-
-WORKDIR /lib/neo4j-mazerunner
-
-# Copy configurations for HDFS
-RUN echo "Copying Hadoop configurations..."
-COPY conf/hadoop /lib/hadoop-2.4.1/etc/hadoop
-
-WORKDIR /lib
-
-RUN sudo chmod 777 -R /lib/hadoop-2.4.1
-
 # Maven package mazerunner/extension with assemblies
 RUN echo "Compiling neo4j-mazerunner extension..."
 WORKDIR /lib/neo4j-mazerunner/extension
@@ -115,5 +97,14 @@ RUN mvn -q assembly:assembly -DdescriptorId=jar-with-dependencies -DskipTests
 # Copy the mazerunner/extension jar file from mazerunner/extension/target to neo4j/plugins
 RUN cp /lib/neo4j-mazerunner/extension/target/extension-1.0-jar-with-dependencies.jar /usr/share/neo4j/plugins/extension-1.0-jar-with-dependencies.jar
 
+WORKDIR /lib
+
+COPY sbin/mazerunner.sh /etc/bootstrap.sh
+RUN chown root:root /etc/bootstrap.sh
+RUN chmod 700 /etc/bootstrap.sh
+
+ENV BOOTSTRAP /etc/bootstrap.sh
+
 EXPOSE 7474
-ENTRYPOINT /lib
+
+CMD ["/etc/bootstrap.sh", "-d"]

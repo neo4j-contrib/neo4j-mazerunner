@@ -78,7 +78,7 @@ public class ConfigurationLoader {
     {
         hadoopSitePath = "../conf/hadoop/core-site.xml";
         hadoopHdfsPath = "../conf/hadoop/hdfs-site.xml";
-        hadoopHdfsUri = "hdfs://0.0.0.0:9000";
+        hadoopHdfsUri = "hdfs://172.17.0.207:9000";
         mazerunnerRelationshipType = "CONNECTED_TO";
         rabbitmqNodename = "localhost";
     }
