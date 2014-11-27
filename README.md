@@ -1,14 +1,135 @@
-Mazerunner for Neo4j
-================
+# Graph Analytics for Neo4j
 
-Mazerunner extends a [Neo4j graph database](http://www.neo4j.com) to run scheduled big data graph compute algorithms at scale with HDFS and Apache Spark.
+This docker image adds high-performance graph analytics to a [Neo4j graph database](http://www.neo4j.com). This image deploys a container with [Apache Spark](https://spark.apache.org/) and uses [GraphX](https://spark.apache.org/graphx/) to perform ETL graph analysis on subgraphs exported from Neo4j. The results of the analysis are applied back to the data in the Neo4j database.
 
-What is Mazerunner?
-================
+## Supported Algorithms
 
-Mazerunner is a [Neo4j unmanaged extension](http://neo4j.com/docs/stable/server-unmanaged-extensions.html) and distributed graph processing platform that extends Neo4j to do scheduled batch and stream processing jobs while persisting the results back to Neo4j.
+*PageRank*
 
-How does it work?
+*Triangle Counting*
+
+*Connected Components*
+
+*Strongly Connected Components*
+
+### Neo4j Mazerunner Service
+
+The Neo4j Mazerunner service in this image is a [unmanaged extension](http://neo4j.com/docs/stable/server-unmanaged-extensions.html) that adds a REST API endpoint to Neo4j for submitting graph analysis jobs to Apache Spark GraphX. The results of the analysis are applied back to the nodes in Neo4j as property values, making the results queryable using Cypher.
+
+## Installation/Deployment
+
+Installation requires 3 docker image deployments, each containing a separate linked component.
+
+* *Hadoop HDFS* (sequenceiq/hadoop-docker:2.4.1)
+* *Neo4j Graph Database* (kbastani/docker-neo4j:latest)
+* *Apache Spark Service* (kbastani/neo4j-graph-analytics:latest)
+
+Pull the following docker images:
+
+    docker pull sequenceiq/hadoop-docker:2.4.1
+    docker pull kbastani/docker-neo4j:latest
+    docker pull kbastani/neo4j-graph-analytics:latest
+
+After each image has been downloaded to your Docker server, run the following commands in order to create the linked containers.
+
+    # Create HDFS
+    docker run -i -t --name hdfs sequenceiq/hadoop-docker:2.4.1 /etc/bootstrap.sh -bash
+    
+    # Create Mazerunner Apache Spark Service
+    docker run -i -t --name mazerunner --link hdfs:hdfs kbastani/neo4j-graph-analytics
+    
+    # Create Neo4j database with links to HDFS and Mazerunner
+    # Replace <user> and <neo4j-path>
+    # with the location to your existing Neo4j database store directory
+    docker run -d -P -v /Users/<user>/<neo4j-path>/data:/opt/data --name graphdb --link mazerunner:mazerunner --link hdfs:hdfs kbastani/docker-neo4j
+
+### Use Existing Neo4j Database
+
+To use an existing Neo4j database, make sure that the database store directory, typically `data/graph.db`, is available on your host OS. Read the [setup guide](https://github.com/kbastani/docker-neo4j#start-neo4j-container) for *kbastani/docker-neo4j* for additional details.
+
+### Use New Neo4j Database
+
+To create a new Neo4j database, use any path to a valid directory.
+
+### Accessing the Neo4j Browser
+
+The Neo4j browser is exposed on the `graphdb` container on port 7474. If you're using boot2docker on MacOSX, follow the directions [here](https://github.com/kbastani/docker-neo4j#boot2docker) to access the Neo4j browser.
+
+## Usage Directions
+
+Graph analysis jobs are started by accessing the following endpoint:
+
+    http://localhost:7474/service/mazerunner/analysis/{analysis}/{relationship_type}
+
+Replace `{analysis}` in the endpoint with one of the following analysis algorithms:
+
+- pagerank
+- triangle_count
+- connected_components
+- strongly_connected_components
+
+Replace `{relationship_type}` in the endpoint with the relationship type in your Neo4j database that you would like to perform analysis on. The nodes that are connected by that relationship will form the graph that will be analyzed. For example, the equivalent Cypher query would be the following:
+
+    MATCH (a)-[:FOLLOWS]->(b)
+    RETURN id(a) as src, id(b) as dst
+
+The result of the analysis will set the property with `{analysis}` as the key on `(a)` and `(b)`. For example, if you ran the `pagerank` analysis on the `FOLLOWS` relationship type, the following Cypher query will display the results:
+
+    MATCH (a)-[:FOLLOWS]-()
+    RETURN DISTINCT id(a) as id, a.pagerank as pagerank
+    ORDER BY pagerank DESC
+
+## Usage Examples
+
+To run graph analysis algorithms, HTTP GET request on the following Neo4j server endpoints:
+
+### PageRank
+    
+    http://172.17.0.21:7474/service/mazerunner/analysis/pagerank/FOLLOWS
+    
+* Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `pagerank`.
+
+* The value of the `pagerank` property is a float data type, ex. `pagerank: 3.14159265359`.
+
+* PageRank is used to find the relative importance of a node within a set of connected nodes.
+
+### Triangle Counting
+    
+    http://172.17.0.21:7474/service/mazerunner/analysis/triangle_count/FOLLOWS
+
+* Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `triangle_count`.
+
+* The value of the `triangle_count` property is an integer data type, ex. `triangle_count: 2`.
+
+* The value of `triangle_count` represents the count of the triangles that a node is connected to.
+
+* A node is part of a triangle when it has two adjacent nodes with a relationship between them. The `triangle_count` property provides a measure of clustering for each node.
+
+### Connected Components
+
+    http://172.17.0.21:7474/service/mazerunner/analysis/connected_components/FOLLOWS
+    
+* Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `connected_components`.
+
+* The value of `connected_components` property is an integer data type, ex. `connected_components: 181`.
+
+* The value of `connected_components` represents the *Neo4j internal node ID* that has the lowest integer value for a set of connected nodes.
+
+* Connected components are used to find isolated clusters, that is, a group of nodes that can reach every other node in the group through a *bidirectional* traversal.
+
+### Strongly Connected Components 
+    
+    http://172.17.0.21:7474/service/mazerunner/analysis/strongly_connected_components/FOLLOWS
+    
+* Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `strongly_connected_components`.
+
+* The value of `strongly_connected_components` property is an integer data type, ex. `strongly_connected_components: 26`.
+
+* The value of `strongly_connected_components` represents the *Neo4j internal node ID* that has the lowest integer value for a set of strongly connected nodes.
+
+* Strongly connected components are used to find clusters, that is, a group of nodes that can reach every other node in the group through a *directed* traversal.
+
+Architecture
 ================
 
 Mazerunner uses a message broker to distribute graph processing jobs to [Apache Spark's GraphX](https://spark.apache.org/graphx/) module. When an agent job is dispatched, a subgraph is exported from Neo4j and written to [Apache Hadoop HDFS](https://hadoop.apache.org/docs/r2.4.1/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html).
@@ -19,156 +140,7 @@ Once the Apache Spark job completes, the results are written back to HDFS as a K
 
 Neo4j is then notified that a property update list is available from Apache Spark on HDFS. Neo4j batch imports the results and applies the updates back to the original graph.
 
-Alpha version
-================
-
-Mazerunner is currently in its alpha stages of development.
-
-The following analysis algorithms are available:
-
- * PageRank
- * Triangle Count
- * Connected Components
- * Strongly Connected Components
-
-Sandbox
-================
-
-Mazerunner alpha ships with a bundled Unbuntu development environment that automatically sets up an environment with all required dependencies preconfigured.
-
-One of the challenges with setting up this architecture is the dependency management across Neo4j, Hadoop, and Spark. In order to make installation and development easier, a test environment was designed to get users and contributors up and running in minutes.
-
-Installation
-================
-
-The Mazerunner development environment sandbox requires [Vagrant](https://docs.vagrantup.com/v2/getting-started/index.html). To get started, visit the provided Vagrant link and follow the directions to install the platform.
-
-You want to get the [latest version](https://www.vagrantup.com/downloads.html) which at the time of writing is `1.6.5`
-
-After Vagrant is installed you'll need to [download the Ubuntu image](https://docs.vagrantup.com/v2/getting-started/index.html) which we'll base our VM on:
-
-    $ vagrant init hashicorp/precise32
-
-    ==> box: Loading metadata for box 'hashicorp/precise32'
-    box: URL: https://vagrantcloud.com/hashicorp/precise32
-    ==> box: Adding box 'hashicorp/precise32' (v1.0.0) for provider: virtualbox
-    box: Downloading: https://vagrantcloud.com/hashicorp/boxes/precise32/versions/1/providers/virtualbox.box
-    ==> box: Successfully added box 'hashicorp/precise32' (v1.0.0) for 'virtualbox'!
-
-Next, clone this repository and run the following command from the Mazerunner repository root:
-
-    $ vagrant up --provision
-
-The development environment will take a few minutes to provision, once complete, run the following command to remote into the development environment:
-
-    $ vagrant ssh
-
-You will then be logged into the machine as the user `vagrant`. All `sudo` operations will not require a username and password, instead it uses a private key.
-
-Start Mazerunner
-================
-
-To start Mazerunner on the provisioned development environment, run the following command after remoting into the machine via `vagrant ssh`:
-
-    $ sh neo4j-mazerunner/sbin/mazerunner.sh
-
-    [*] Waiting for messages. To exit press CTRL+C
-
-Only run this script once, as it imports the Neo4j movies sample dataset. It also runs the following query:
-
-#### Create a KNOWS relationship between all actors who acted in the same movie
-
-    MATCH (a1:Person)-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors)
-    CREATE (a1)-[:KNOWS]->(coActors);
-
-By doing this, we create a direct link between actors that can be used to create a PageRank of the most valuable actors to work with.
-
-To start the PageRank job, on the host OS, navigate to the following URL:
-
-    http://localhost:65074/service/mazerunner/analysis/pagerank/KNOWS
-
-This will run the PageRank algorithm on actors who know each other and then write the results back into Neo4j.
-
-If we connect to Neo4j via the Neo4j shell tool from the sandbox (`vagrant ssh`), we can see that `Person` nodes now have a `pagerank` property:
-
-    $ echo "MATCH n WHERE HAS(n.pagerank) RETURN n ORDER BY n.pagerank DESC LIMIT 10;" | /var/lib/neo4j/bin/neo4j-shell
-    Welcome to the Neo4j Shell! Enter 'help' for a list of commands
-    NOTE: Remote Neo4j graph database service 'shell' at port 1337
-
-    neo4j-sh (?)$ MATCH n WHERE HAS(n.pagerank) RETURN n ORDER BY n.pagerank DESC LIMIT 10;
-    +-----------------------------------------------------------------------+
-    | n                                                                     |
-    +-----------------------------------------------------------------------+
-    | Node[71]{name:"Tom Hanks",born:1956,pagerank:4.642800717539658}         |
-    | Node[1]{name:"Keanu Reeves",born:1964,pagerank:2.605304495549113}       |
-    | Node[22]{name:"Cuba Gooding Jr.",born:1968,pagerank:2.5655048212974223} |
-    | Node[34]{name:"Meg Ryan",born:1961,pagerank:2.52628473708215}           |
-    | Node[16]{name:"Tom Cruise",born:1962,pagerank:2.430592498009265}        |
-    | Node[19]{name:"Kevin Bacon",born:1958,pagerank:2.0886893112867035}      |
-    | Node[17]{name:"Jack Nicholson",born:1937,pagerank:1.9641313625284538}   |
-    | Node[120]{name:"Ben Miles",born:1967,pagerank:1.8680986516285438}       |
-    | Node[4]{name:"Hugo Weaving",born:1960,pagerank:1.8515582875810466}      |
-    | Node[20]{name:"Kiefer Sutherland",born:1966,pagerank:1.784065038526406} |
-    +-----------------------------------------------------------------------+
-    10 rows
-
-You can also access the Neo4j Browser from the host OS at the URL: `http://localhost:65074` and run the same query in the browser.
-
-Usage
-================
-
-To run graph analysis algorithms, HTTP GET request on the following Neo4j server endpoints:
-
-## PageRank
-    
-    http://localhost:65074/service/mazerunner/analysis/pagerank/KNOWS
-    
-* Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `pagerank`.
-* The value of the `pagerank` property is a float data type, ex. `pagerank: 3.14159265359`.
-* PageRank is used to find the relative importance of a node within a set of connected nodes.
-
-## Triangle Counting
-    
-    http://localhost:65074/service/mazerunner/analysis/triangle_count/KNOWS
-
-* Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `triangle_count`.
-* The value of the `triangle_count` property is an integer data type, ex. `triangle_count: 2`.
-* The value of `triangle_count` represents the count of the triangles that a node is connected to.
-* A node is part of a triangle when it has two adjacent nodes with a relationship between them. The `triangle_count` property provides a measure of clustering for each node.
-
-## Connected Components
-
-    http://localhost:65074/service/mazerunner/analysis/connected_components/KNOWS
-    
-* Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `connected_components`.
-* The value of `connected_components` property is an integer data type, ex. `connected_components: 181`.
-* The value of `connected_components` represents the *Neo4j internal node ID* that has the lowest integer value for a set of connected nodes.
-* Connected components are used to find isolated clusters, that is, a group of nodes that can reach every other node in the group through a *bidirectional* traversal.
-
-## Strongly Connected Components 
-    
-    http://localhost:65074/service/mazerunner/analysis/strongly_connected_components/KNOWS
-    
-* Gets all nodes connected by the `KNOWS` relationship and updates each node with the property key `strongly_connected_components`.
-* The value of `strongly_connected_components` property is an integer data type, ex. `strongly_connected_components: 26`.
-* The value of `strongly_connected_components` represents the *Neo4j internal node ID* that has the lowest integer value for a set of strongly connected nodes.
-* Strongly connected components are used to find clusters, that is, a group of nodes that can reach every other node in the group through a *directed* traversal.
-
-Roadmap
-================
-
-The roadmap for 1.0.0-M01 milestone can be found here: [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1)
-
-To add feature requests to this list, please open an issue against the `Mazerunner Roadmap` label.
-
 License
 ================
 
 This library is licensed under the Apache License, Version 2.0.
-
-![Neo4j Mazerunner](http://i.imgur.com/wCZKXNO.png)
-
-Feedback
-================
-
-If you run into any issues head on over to the issues page and submit an issue. If you have any general feedback, add a comment to [Neo4j Mazerunner 1.0.0-M01 Milestone Features](https://github.com/kbastani/neo4j-mazerunner/issues/1).
