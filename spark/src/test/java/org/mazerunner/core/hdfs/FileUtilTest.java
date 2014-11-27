@@ -2,6 +2,8 @@ package org.mazerunner.core.hdfs;
 
 import junit.framework.TestCase;
 import org.mazerunner.core.config.ConfigurationLoader;
+import org.mazerunner.core.models.ProcessorMessage;
+import org.mazerunner.core.processor.GraphProcessor;
 
 public class FileUtilTest extends TestCase {
 
@@ -16,7 +18,7 @@ public class FileUtilTest extends TestCase {
         String path = ConfigurationLoader.getInstance().getHadoopHdfsUri() + "/test/propertyNodeList.txt";
 
         // Test writing the PageRank result to HDFS path
-        FileUtil.writePropertyGraphUpdate(path, nodeList);
+        FileUtil.writePropertyGraphUpdate(new ProcessorMessage(path, GraphProcessor.PAGERANK), nodeList);
 
         // Validate node list
         assertEquals(FileUtil.readHdfsFile(path), "# Node Property Value List" + "\n" + nodeList);
