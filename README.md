@@ -47,6 +47,8 @@ After each image has been downloaded to your Docker server, run the following co
 
 To use an existing Neo4j database, make sure that the database store directory, typically `data/graph.db`, is available on your host OS. Read the [setup guide](https://github.com/kbastani/docker-neo4j#start-neo4j-container) for *kbastani/docker-neo4j* for additional details.
 
+> Note: The kbastani/docker-neo4j image is running Neo4j 2.1.6. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
+
 ### Use New Neo4j Database
 
 To create a new Neo4j database, use any path to a valid directory.
