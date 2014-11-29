@@ -3,7 +3,7 @@
 # Start rabbitmq
 sudo su root -c -l "service rabbitmq-server start"
 
-cd /lib/neo4j-mazerunner/spark
+cd /etc/mazerunner
 echo ""
 echo ""
 echo "    __  ______ _____   __________  __  ___   ___   ____________  "
@@ -18,4 +18,4 @@ echo "========================="
 echo "To start a PageRank job, access the Mazerunner PageRank endpoint"
 echo "Example: curl http://localhost:7474/service/mazerunner/analysis/pagerank/KNOWS"
 
-sudo su root -c -l "mvn -q compile exec:java"
+sudo su root -c -l "java -cp spark-1.0-driver.jar org.mazerunner.core.messaging.Worker"
