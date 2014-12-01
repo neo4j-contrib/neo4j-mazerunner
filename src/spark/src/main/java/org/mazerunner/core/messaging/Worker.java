@@ -43,10 +43,10 @@ public class Worker {
     private String sparkExecutorMemory = "512m";
 
     @Option(name="--spark.master",usage="The Spark master URL (e.g. spark://localhost:7077).",metaVar="<url>")
-    private String sparkMaster;
+    private String sparkMaster = "local";
 
     @Option(name="--hadoop.hdfs",usage="The HDFS URL (e.g. hdfs://0.0.0.0:9000).", metaVar = "<url>")
-    private String hadoopHdfs;
+    private String hadoopHdfs = "hdfs://10.0.0.4:8020";
 
     // receives other command line parameters than options
     @Argument
@@ -116,6 +116,8 @@ public class Worker {
         while (true) {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
             String message = new String(delivery.getBody());
+
+            System.out.println(" [x] Received '" + message + "'");
 
             // Deserialize message
             Gson gson = new Gson();

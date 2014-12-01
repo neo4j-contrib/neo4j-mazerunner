@@ -57,19 +57,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>2.4.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs</artifactId>
-            <version>2.4.1</version>
+            <artifactId>hadoop-client</artifactId>
+            <version>1.0.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
