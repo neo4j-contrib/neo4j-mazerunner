@@ -18,4 +18,4 @@ echo "========================="
 echo "To start a PageRank job, access the Mazerunner PageRank endpoint"
 echo "Example: curl http://localhost:7474/service/mazerunner/analysis/pagerank/KNOWS"
 
-sudo su root -c -l "java -cp $CLASSPATH org.mazerunner.core.messaging.Worker --spark.master $SPARK_HOST --hadoop.hdfs $HDFS_HOST"
+sudo su root -c -l "java -cp $CLASSPATH org.mazerunner.core.messaging.Worker --spark.master $SPARK_HOST --hadoop.hdfs $HDFS_HOST --spark.executor.memory $SPARK_EXECUTOR_MEMORY"
