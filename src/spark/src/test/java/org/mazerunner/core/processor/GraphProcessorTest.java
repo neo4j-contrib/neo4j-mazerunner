@@ -11,6 +11,8 @@ public class GraphProcessorTest extends TestCase {
     @Test
     public void testProcessEdgeList() throws Exception {
 
+        ConfigurationLoader.testPropertyAccess = true;
+
         String nodeList =
                 "0 1\n" +
                 "1 3\n" +

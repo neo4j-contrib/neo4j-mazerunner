@@ -26,11 +26,33 @@ public class ConfigurationLoader {
     public static final String HADOOP_HDFS_URI = "org.mazerunner.hadoop.hdfs.uri";
     public static final String MAZERUNNER_RELATIONSHIP_TYPE_KEY = "org.mazerunner.job.relationshiptype";
     public static final String RABBITMQ_NODENAME_KEY = "org.mazerunner.rabbitmq.nodename";
+    public static final String SPARK_HOST = "org.mazerunner.spark.host";
     private String hadoopSitePath;
     private String hadoopHdfsPath;
     private String hadoopHdfsUri;
     private String mazerunnerRelationshipType;
     private String rabbitmqNodename;
+
+    public String getExecutorMemory() {
+        return executorMemory;
+    }
+
+    public void setExecutorMemory(String executorMemory) {
+        this.executorMemory = executorMemory;
+    }
+
+    public String getAppName() {
+        return appName;
+    }
+
+    public void setAppName(String appName) {
+        this.appName = appName;
+    }
+
+    private String executorMemory;
+    private String appName;
+
+    private String sparkHost;
 
     private static ConfigurationLoader instance = null;
 
@@ -65,18 +87,20 @@ public class ConfigurationLoader {
 
         hadoopSitePath = prop.getProperty(HADOOP_CORE_SITE_KEY);
         hadoopHdfsPath = prop.getProperty(HADOOP_HDFS_SITE_KEY);
-        hadoopHdfsUri = java.net.URLDecoder.decode(prop.getProperty(HADOOP_HDFS_URI), "UTF-8");
         mazerunnerRelationshipType = prop.getProperty(MAZERUNNER_RELATIONSHIP_TYPE_KEY);
         rabbitmqNodename = prop.getProperty(RABBITMQ_NODENAME_KEY);
     }
 
     public void initializeTest()
     {
-        hadoopSitePath = "/Users/kennybastani/Downloads/hadoop-2.4.1/etc/hadoop/core-site.xml";
-        hadoopHdfsPath = "/Users/kennybastani/Downloads/hadoop-2.4.1/etc/hadoop/hdfs-site.xml";
+        hadoopSitePath = "/hadoop-2.4.1/conf/core-site.xml";
+        hadoopHdfsPath = "/hadoop-2.4.1/conf/hdfs-site.xml";
         hadoopHdfsUri = "hdfs://0.0.0.0:9000";
         mazerunnerRelationshipType = "CONNECTED_TO";
         rabbitmqNodename = "localhost";
+        sparkHost = "local";
+        appName = "mazerunner";
+        executorMemory = "13g";
     }
 
     public String getMazerunnerRelationshipType() {
@@ -97,5 +121,18 @@ public class ConfigurationLoader {
 
     public String getRabbitmqNodename() {
         return rabbitmqNodename;
+    }
+
+    public String getSparkHost() {
+        return sparkHost;
+    }
+
+
+    public void setSparkHost(String sparkHost) {
+        this.sparkHost = sparkHost;
+    }
+
+    public void setHadoopHdfsUri(String hadoopHdfsUri) {
+        this.hadoopHdfsUri = hadoopHdfsUri;
     }
 }

@@ -71,13 +71,9 @@ public class GraphProcessor {
     }
 
     public static void initializeSparkContext() {
-        String appName = "mazerunner";
-        SparkConf conf = new SparkConf().setAppName(appName).set("spark.master", "local[8]")
+        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName()).set("spark.master", ConfigurationLoader.getInstance().getSparkHost())
                 .set("spark.locality.wait", "3000")
-                .set("spark.executor.memory", "13g")
-                .set("spark.cores.max", "8")
-                .set("spark.executor.extraClassPath", "/spark-1.1.0/lib/*")
-                .set("spark.files.userClassPathFirst", "true");
+                .set("spark.executor.memory", ConfigurationLoader.getInstance().getExecutorMemory());
 
         javaSparkContext = new JavaSparkContext(conf);
     }

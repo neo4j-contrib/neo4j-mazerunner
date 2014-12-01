@@ -5,6 +5,15 @@ FROM       dockerfile/java:oracle-java8
 MAINTAINER K.B. Name <kb@socialmoon.com>
 
 USER root
+
+# Set the default HDFS and Spark hosts
+ENV SPARK_HOST local
+ENV HDFS_HOST hdfs://hdfs:9000
+ENV HADOOP_HOME /etc/hadoop
+ENV MAZERUNNER_HOME /etc/mazerunner
+ENV CLASSPATH /etc/hadoop/conf:/etc/hadoop/*:/etc/mazerunner/*:/etc/mazerunner/lib/*
+ENV SPARK_CLASSPATH /etc/hadoop/conf:/etc/hadoop/*:/etc/mazerunner/*:/etc/mazerunner/lib/*
+
 RUN mkdir /etc/mazerunner
 
 # Update apt-get
