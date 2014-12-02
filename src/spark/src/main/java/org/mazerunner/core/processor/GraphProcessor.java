@@ -76,7 +76,8 @@ public class GraphProcessor {
                 .set("spark.executor.memory", ConfigurationLoader.getInstance().getExecutorMemory())
                 .set("spark.logConf", "true")
                 .set("spark.eventLog.enabled", "true")
-                .set("spark.driver.port", "8787");
+                .set("spark.driver.port", "8787")
+                .set("spark.driver.host", ConfigurationLoader.getInstance().getDriverHost());
 
         javaSparkContext = new JavaSparkContext(conf);
     }

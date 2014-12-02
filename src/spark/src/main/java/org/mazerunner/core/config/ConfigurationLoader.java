@@ -33,6 +33,16 @@ public class ConfigurationLoader {
     private String mazerunnerRelationshipType;
     private String rabbitmqNodename;
 
+    public String getDriverHost() {
+        return driverHost;
+    }
+
+    public void setDriverHost(String driverHost) {
+        this.driverHost = driverHost;
+    }
+
+    private String driverHost;
+
     public String getExecutorMemory() {
         return executorMemory;
     }

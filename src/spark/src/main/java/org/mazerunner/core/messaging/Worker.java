@@ -48,6 +48,9 @@ public class Worker {
     @Option(name="--hadoop.hdfs",usage="The HDFS URL (e.g. hdfs://0.0.0.0:9000).", metaVar = "<url>")
     private String hadoopHdfs = "hdfs://10.0.0.4:8020";
 
+    @Option(name="--spark.driver.host",usage="The host name of the Spark driver (eg. ec2-54-67-91-4.us-west-1.compute.amazonaws.com)", metaVar = "<url>")
+    private String driverHost = "mazerunner";
+
     // receives other command line parameters than options
     @Argument
     private List<String> arguments = new ArrayList<String>();
@@ -79,6 +82,7 @@ public class Worker {
             ConfigurationLoader.getInstance().setSparkHost(sparkMaster);
             ConfigurationLoader.getInstance().setAppName(sparkAppName);
             ConfigurationLoader.getInstance().setExecutorMemory(sparkExecutorMemory);
+            ConfigurationLoader.getInstance().setDriverHost(driverHost);
 
         } catch( CmdLineException e ) {
             // if there's a problem in the command line,
