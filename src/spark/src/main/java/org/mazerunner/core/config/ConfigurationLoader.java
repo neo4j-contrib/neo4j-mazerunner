@@ -31,6 +31,11 @@ public class ConfigurationLoader {
     private String hadoopHdfsPath;
     private String hadoopHdfsUri;
     private String mazerunnerRelationshipType;
+
+    public void setRabbitmqNodename(String rabbitmqNodename) {
+        this.rabbitmqNodename = rabbitmqNodename;
+    }
+
     private String rabbitmqNodename;
 
     public String getDriverHost() {

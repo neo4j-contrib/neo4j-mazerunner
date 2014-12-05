@@ -51,6 +51,9 @@ public class Worker {
     @Option(name="--spark.driver.host",usage="The host name of the Spark driver (eg. ec2-54-67-91-4.us-west-1.compute.amazonaws.com)", metaVar = "<url>")
     private String driverHost = "mazerunner";
 
+    @Option(name="--rabbitmq.host",usage="The host name of the rabbitmq server.", metaVar = "<url>")
+    private String rabbitMqHost = "localhost";
+
     // receives other command line parameters than options
     @Argument
     private List<String> arguments = new ArrayList<String>();
@@ -83,6 +86,7 @@ public class Worker {
             ConfigurationLoader.getInstance().setAppName(sparkAppName);
             ConfigurationLoader.getInstance().setExecutorMemory(sparkExecutorMemory);
             ConfigurationLoader.getInstance().setDriverHost(driverHost);
+            ConfigurationLoader.getInstance().setRabbitmqNodename(rabbitMqHost);
 
         } catch( CmdLineException e ) {
             // if there's a problem in the command line,
