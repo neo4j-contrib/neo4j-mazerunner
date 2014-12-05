@@ -71,14 +71,17 @@ public class GraphProcessor {
     }
 
     public static void initializeSparkContext() {
-        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName()).set("spark.master", ConfigurationLoader.getInstance().getSparkHost())
-                .set("spark.locality.wait", "3000")
-                .set("spark.executor.memory", ConfigurationLoader.getInstance().getExecutorMemory())
-                .set("spark.logConf", "true")
-                .set("spark.eventLog.enabled", "true")
-                .set("spark.driver.port", "8787")
-                .set("spark.executor.port", "8989")
-                .set("spark.driver.host", ConfigurationLoader.getInstance().getDriverHost());
+        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName());
+
+//        ).set("spark.master", ConfigurationLoader.getInstance().getSparkHost())
+//                .set("spark.locality.wait", "3000")
+//                .set("spark.executor.memory", ConfigurationLoader.getInstance().getExecutorMemory())
+//                .set("spark.logConf", "true")
+//                .set("spark.eventLog.enabled", "true")
+//                .set("spark.driver.port", "8787")
+//                .set("spark.executor.port", "8989")
+//                .set("spark.local.ip","0.0.0.0")
+//                .set("spark.driver.host", ConfigurationLoader.getInstance().getDriverHost());
 
         javaSparkContext = new JavaSparkContext(conf);
     }

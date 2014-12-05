@@ -110,9 +110,9 @@ public class ConfigurationLoader {
     {
         hadoopSitePath = "/Users/kennybastani/hadoop-1.0.4/conf/core-site.xml";
         hadoopHdfsPath = "/Users/kennybastani/hadoop-1.0.4/conf/hdfs-site.xml";
-        hadoopHdfsUri = "hdfs://10.0.0.4:8020";
+        hadoopHdfsUri = "hdfs://ip-172-31-7-92.us-west-1.compute.internal:9000";
         mazerunnerRelationshipType = "CONNECTED_TO";
-        rabbitmqNodename = "localhost";
+        rabbitmqNodename = "ec2-54-67-50-40.us-west-1.compute.amazonaws.com";
         sparkHost = "local";
         appName = "mazerunner";
         executorMemory = "13g";
