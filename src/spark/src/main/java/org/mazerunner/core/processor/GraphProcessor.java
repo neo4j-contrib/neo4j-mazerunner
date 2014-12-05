@@ -71,7 +71,8 @@ public class GraphProcessor {
     }
 
     public static void initializeSparkContext() {
-        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName());
+        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName())
+                .setMaster(ConfigurationLoader.getInstance().getSparkHost());
 
 //        ).set("spark.master", ConfigurationLoader.getInstance().getSparkHost())
 //                .set("spark.locality.wait", "3000")
