@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.Iterator;
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -36,9 +37,9 @@ public class FileUtil {
      * @throws URISyntaxException
      * @throws IOException
      */
-    public static void writePropertyGraphUpdate(ProcessorMessage processorMessage, String nodeList) throws URISyntaxException, IOException {
+    public static void writePropertyGraphUpdate(ProcessorMessage processorMessage, Iterable<String> nodeList) throws URISyntaxException, IOException {
         // Write the nodeList results to HDFS
-        writeListFile(processorMessage.getPath(), nodeList);
+        writeListFile(processorMessage.getPath(), nodeList.iterator());
 
         // Serialize the processor message
         Gson gson = new Gson();
@@ -55,18 +56,15 @@ public class FileUtil {
      * @throws IOException
      * @throws URISyntaxException
      */
-    public static void writeListFile(String path, String nodeList) throws IOException, URISyntaxException {
+    public static void writeListFile(String path, Iterator<String> nodeList) throws IOException, URISyntaxException {
         FileSystem fs = getHadoopFileSystem();
         Path updateFilePath = new Path(path);
         BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(updateFilePath,true)));
 
-        br.write("# Node Property Value List");
-        BufferedReader nodeListReader = new BufferedReader(new StringReader(nodeList));
+        br.write("# Node Property Value List\n");
+        while(nodeList.hasNext())
+            br.write(nodeList.next());
 
-        String line;
-        while((line = nodeListReader.readLine()) != null) {
-            br.write( "\n" + line);
-        }
         br.flush();
         br.close();
     }

@@ -12,7 +12,7 @@ public class SenderTest extends TestCase {
 
     public void testSendMessage() throws Exception {
         ConfigurationLoader.testPropertyAccess=true;
-        ProcessorMessage processorMessage = new ProcessorMessage("", "connected_components");
+        ProcessorMessage processorMessage = new ProcessorMessage("", "strongly_connected_components");
         processorMessage.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + GraphProcessor.PROPERTY_GRAPH_UPDATE_PATH);
         // Serialize the processor message
         Gson gson = new Gson();

@@ -8,6 +8,7 @@ import org.mazerunner.core.models.ProcessorMessage;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -30,7 +31,7 @@ public class GraphProcessor {
     public static final String CONNECTED_COMPONENTS = "connected_components";
     public static final String PAGERANK = "pagerank";
     public static final String STRONGLY_CONNECTED_COMPONENTS = "strongly_connected_components";
-    public static final String SHORTEST_PATH = "shortest_path";
+    public static final String CLOSENESS_CENTRALITY = "closeness_centrality";
 
     public static JavaSparkContext javaSparkContext = null;
 
@@ -39,7 +40,7 @@ public class GraphProcessor {
             initializeSparkContext();
         }
 
-        String results = "";
+        Iterable<String> results = new ArrayList<>();
 
         // Routing
         switch (processorMessage.getAnalysis()) {
@@ -58,6 +59,10 @@ public class GraphProcessor {
             case STRONGLY_CONNECTED_COMPONENTS:
                 // Route to StronglyConnectedComponents
                 results = algorithms.stronglyConnectedComponents(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            case CLOSENESS_CENTRALITY:
+                // Route to StronglyConnectedComponents
+                results = algorithms.closenessCentrality(javaSparkContext.sc(), processorMessage.getPath());
                 break;
             default:
                 // Analysis does not exist
