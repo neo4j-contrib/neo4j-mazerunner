@@ -24,6 +24,6 @@ public class GraphProcessorTest extends TestCase {
         // Test writing the PageRank result to HDFS path
         FileUtil.writeListFile(path, nodeList);
 
-        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.PAGERANK));
+        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.TRIANGLE_COUNT));
     }
 }

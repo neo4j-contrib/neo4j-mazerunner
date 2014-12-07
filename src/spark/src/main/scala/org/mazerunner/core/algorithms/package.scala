@@ -1,7 +1,7 @@
 package org.mazerunner.core
 
 import org.apache.spark.SparkContext
-import org.apache.spark.graphx.GraphLoader
+import org.apache.spark.graphx.{PartitionStrategy, GraphLoader}
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -55,7 +55,7 @@ object algorithms {
   }
 
   def triangleCount(sc: SparkContext, path: String) : String = {
-    val graph = GraphLoader.edgeListFile(sc, path);
+    val graph = GraphLoader.edgeListFile(sc, path, true).partitionBy(PartitionStrategy.RandomVertexCut)
 
     val v = graph.triangleCount().vertices
 
