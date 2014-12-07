@@ -2,6 +2,7 @@ package translation;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 
 import java.io.IOException;
 import java.util.Spliterator;
@@ -83,7 +84,7 @@ public class ParallelBatchTransaction extends RecursiveAction {
      */
     protected void computeDirectly() throws IOException {
 
-        Transaction tx = db.beginTx();
+        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
 
         for (int i = mStart; i < mStart + mLength; i++) {
             mSource[i].forEachRemaining(line -> {

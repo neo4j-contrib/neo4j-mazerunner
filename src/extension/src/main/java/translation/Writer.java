@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.Path;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import java.io.BufferedReader;
@@ -43,7 +44,7 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
  */
 public class Writer {
 
-    private static final String EDGE_LIST_RELATIVE_FILE_PATH = "/neo4j/mazerunner/edgeList.txt";
+    public static final String EDGE_LIST_RELATIVE_FILE_PATH = "/neo4j/mazerunner/edgeList.txt";
     public static Integer updateCounter = 0;
     public static Integer counter = 0;
 
@@ -119,9 +120,9 @@ public class Writer {
     }
 
     public static void writeBlockForNode(Node n, GraphDatabaseService db, BufferedWriter bufferedWriter, int reportBlockSize) throws IOException {
-        Transaction tx = db.beginTx();
+        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
         Iterable<Relationship> rels = n.getRelationships(withName(ConfigurationLoader.getInstance().getMazerunnerRelationshipType()), Direction.OUTGOING);
-        Stream<Relationship> relStream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(rels.iterator(), Spliterator.NONNULL), false);
+        Stream<Relationship> relStream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(rels.iterator(), Spliterator.NONNULL), true);
         relStream.forEach(rel ->
         {
             try {
@@ -138,7 +139,6 @@ public class Writer {
         });
         tx.success();
         tx.close();
-        bufferedWriter.flush();
     }
 
     public static void updateBlockForRow(String line, GraphDatabaseService db, int reportBlockSize, String analysis) {

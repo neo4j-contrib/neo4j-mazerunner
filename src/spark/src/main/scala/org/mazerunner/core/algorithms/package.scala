@@ -1,7 +1,8 @@
 package org.mazerunner.core
 
 import org.apache.spark.SparkContext
-import org.apache.spark.graphx.{PartitionStrategy, GraphLoader}
+import org.apache.spark.graphx.lib.ShortestPaths
+import org.apache.spark.graphx.{GraphLoader, PartitionStrategy};
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -45,7 +46,7 @@ object algorithms {
   def stronglyConnectedComponents(sc: SparkContext, path: String) : String = {
     val graph = GraphLoader.edgeListFile(sc, path);
 
-    val v = graph.stronglyConnectedComponents(10).vertices
+    val v = graph.stronglyConnectedComponents(2).vertices
 
     val results = v.map { row =>
       row._1 + " " + row._2
@@ -62,6 +63,19 @@ object algorithms {
     val results = v.map { row =>
       row._1 + " " + row._2
     }
+
+    results.collect().mkString("\n")
+  }
+
+  def shortestPath(sc: SparkContext, path: String, from: Int, to: Int) : String = {
+    val graph = GraphLoader.edgeListFile(sc, path);
+
+    val v = ShortestPaths.run(graph, Seq(from)).vertices
+
+    val results = v.filter { vtx => vtx._1.toInt == to }
+      .map { row =>
+        row._1 + " " + row._2
+      }
 
     results.collect().mkString("\n")
   }

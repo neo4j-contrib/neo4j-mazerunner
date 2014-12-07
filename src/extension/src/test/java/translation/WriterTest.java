@@ -1,8 +1,10 @@
 package translation;
 
+import com.google.gson.Gson;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import junit.framework.TestCase;
+import messaging.Worker;
 import models.ProcessorMessage;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -11,6 +13,7 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import java.io.*;
@@ -77,7 +80,7 @@ public class WriterTest extends TestCase {
 
         GraphDatabaseService db = setUpDb();
 
-        Transaction tx = db.beginTx();
+        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
 
 
         // Use test configurations
@@ -134,5 +137,18 @@ public class WriterTest extends TestCase {
     private static GraphDatabaseService setUpDb()
     {
         return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+    }
+
+    public void testSendProcessorMessage() throws Exception {
+        ConfigurationLoader.testPropertyAccess=true;
+
+        // Serialize processor message
+        ProcessorMessage message = new ProcessorMessage("", "strongly_connected_components");
+        message.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + Writer.EDGE_LIST_RELATIVE_FILE_PATH);
+        Gson gson = new Gson();
+        String strMessage = gson.toJson(message);
+
+        // Send message to the Spark graph processor
+        Worker.sendMessage(strMessage);
     }
 }

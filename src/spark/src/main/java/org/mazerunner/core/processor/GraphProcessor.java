@@ -30,6 +30,7 @@ public class GraphProcessor {
     public static final String CONNECTED_COMPONENTS = "connected_components";
     public static final String PAGERANK = "pagerank";
     public static final String STRONGLY_CONNECTED_COMPONENTS = "strongly_connected_components";
+    public static final String SHORTEST_PATH = "shortest_path";
 
     public static JavaSparkContext javaSparkContext = null;
 
@@ -70,20 +71,12 @@ public class GraphProcessor {
         org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(processorMessage, results);
     }
 
-    public static void initializeSparkContext() {
+    public static JavaSparkContext initializeSparkContext() {
         SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName())
                 .setMaster(ConfigurationLoader.getInstance().getSparkHost());
 
-//        ).set("spark.master", ConfigurationLoader.getInstance().getSparkHost())
-//                .set("spark.locality.wait", "3000")
-//                .set("spark.executor.memory", ConfigurationLoader.getInstance().getExecutorMemory())
-//                .set("spark.logConf", "true")
-//                .set("spark.eventLog.enabled", "true")
-//                .set("spark.driver.port", "8787")
-//                .set("spark.executor.port", "8989")
-//                .set("spark.local.ip","0.0.0.0")
-//                .set("spark.driver.host", ConfigurationLoader.getInstance().getDriverHost());
-
         javaSparkContext = new JavaSparkContext(conf);
+
+        return javaSparkContext;
     }
 }
