@@ -34,7 +34,7 @@ import static org.kohsuke.args4j.ExampleMode.ALL;
 
 public class Worker {
 
-    private static final String EXCHANGE_NAME = "logs";
+    private static final String TASK_QUEUE_NAME = "jobs";
 
     @Option(name="--spark.app.name",usage="The Spark application name (e.g. mazerunner).",metaVar="<string>")
     private String sparkAppName = "mazerunner";
@@ -109,17 +109,17 @@ public class Worker {
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
-        channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
-        String queueName = channel.queueDeclare().getQueue();
-        channel.queueBind(queueName, EXCHANGE_NAME, "");
+        channel.queueDeclare(TASK_QUEUE_NAME, true, false, false, null);
+
+        channel.basicQos(20);
 
         // Initialize spark context
         GraphProcessor.initializeSparkContext();
 
-        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
-
         QueueingConsumer consumer = new QueueingConsumer(channel);
-        channel.basicConsume(queueName, true, consumer);
+        channel.basicConsume(TASK_QUEUE_NAME, false, consumer);
+
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
         while (true) {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
@@ -134,7 +134,8 @@ public class Worker {
             // Run PageRank
             GraphProcessor.processEdgeList(processorMessage);
 
-            System.out.println(" [x] Received '" + message + "'");
+            System.out.println(" [x] Done '" + message + "'");
+            channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
         }
     }
 }

@@ -7,6 +7,7 @@ import org.mazerunner.core.algorithms;
 import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.hdfs.FileUtil;
 import org.mazerunner.core.models.ProcessorMessage;
+import org.mazerunner.core.models.ProcessorMode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ public class GraphProcessorTest extends TestCase {
                 "3 0"
         )).iterator());
 
-        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.TRIANGLE_COUNT));
+        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.TRIANGLE_COUNT, ProcessorMode.Partitioned));
     }
 
     @Test

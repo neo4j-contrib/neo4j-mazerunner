@@ -1,6 +1,9 @@
 package translation;
 
+import models.ProcessorMessage;
+import models.ProcessorMode;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
@@ -34,7 +37,7 @@ public class ParallelBatchTransaction extends RecursiveAction {
     private int mLength;
     private int reportBlock;
     private int threshold;
-    private String analysis;
+    private ProcessorMessage analysis;
 
     /**
      * Instantiate an instance of ParallelBatchTransaction to perform distributed computation.
@@ -46,7 +49,7 @@ public class ParallelBatchTransaction extends RecursiveAction {
      * @param threshold The threshold is the unchanged size of the initial Spliterator[] from the original method call context.
      * @param analysis
      */
-    public ParallelBatchTransaction(Spliterator<String>[] src, int start, int length, GraphDatabaseService db, int reportBlock, int threshold, String analysis) {
+    public ParallelBatchTransaction(Spliterator<String>[] src, int start, int length, GraphDatabaseService db, int reportBlock, int threshold, ProcessorMessage analysis) {
         this.mSource = src;
         this.db = db;
         this.mStart = start;
@@ -86,9 +89,23 @@ public class ParallelBatchTransaction extends RecursiveAction {
 
         Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
 
+        Node partitionNode = null;
+
+        if(analysis.getMode() == ProcessorMode.Partitioned)
+            partitionNode = db.getNodeById(analysis.getPartitionDescription().getPartitionId());
+
         for (int i = mStart; i < mStart + mLength; i++) {
+            final Node finalPartitionNode = partitionNode;
             mSource[i].forEachRemaining(line -> {
-                Writer.updateBlockForRow(line, db, reportBlock, analysis);
+                switch (analysis.getMode()) {
+                    case Partitioned:
+                        Writer.updatePartitionBlockForRow(line, db, reportBlock, analysis, finalPartitionNode);
+                        break;
+                    case Unpartitioned:
+                        Writer.updateBlockForRow(line, db, reportBlock, analysis.getAnalysis());
+                        break;
+                }
+
             });
         }
 

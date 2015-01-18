@@ -85,9 +85,9 @@ public class ConfigurationLoader {
     {
         hadoopSitePath = "/etc/hadoop/core-site.xml";
         hadoopHdfsPath = "/etc/hadoop/hdfs-site.xml";
-        hadoopHdfsUri = "hdfs://ip-172-31-5-251.us-west-1.compute.internal:9000";
+        hadoopHdfsUri = "hdfs://0.0.0.0:8020";
         mazerunnerRelationshipType = "CONNECTED_TO";
-        rabbitmqNodename = "ec2-54-183-26-46.us-west-1.compute.amazonaws.com";
+        rabbitmqNodename = "localhost";
     }
 
     public String getMazerunnerRelationshipType() {

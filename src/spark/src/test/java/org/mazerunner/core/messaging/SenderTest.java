@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import junit.framework.TestCase;
 import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.models.ProcessorMessage;
+import org.mazerunner.core.models.ProcessorMode;
 import org.mazerunner.core.processor.GraphProcessor;
 
 public class SenderTest extends TestCase {
@@ -12,7 +13,7 @@ public class SenderTest extends TestCase {
 
     public void testSendMessage() throws Exception {
         ConfigurationLoader.testPropertyAccess=true;
-        ProcessorMessage processorMessage = new ProcessorMessage("", "strongly_connected_components");
+        ProcessorMessage processorMessage = new ProcessorMessage("", "strongly_connected_components", ProcessorMode.Partitioned);
         processorMessage.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + GraphProcessor.PROPERTY_GRAPH_UPDATE_PATH);
         // Serialize the processor message
         Gson gson = new Gson();

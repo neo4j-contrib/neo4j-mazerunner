@@ -2,6 +2,7 @@ package extension;
 
 
 import config.ConfigurationLoader;
+import jobs.PartitionedAnalysis;
 import messaging.BatchWriterService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import translation.Writer;
@@ -50,12 +51,28 @@ public class MazerunnerService {
 
         // Export graph to HDFS and send message to Spark when complete
         try {
-            Writer.startAgentJob(db, type);
+            Writer.dispatchJob(db, type);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
+
+        return Response.status(200)
+                .entity("{ result: 'success' }")
+                .type(MediaType.APPLICATION_JSON).build();
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/group/analysis/{type}/{label}/{groupRelationship}/{targetRelationship}")
+    public Response partitionedAnalysis(@PathParam("type") String type, @PathParam("label") String label, @PathParam("groupRelationship") String groupRelationship, @PathParam("targetRelationship") String targetRelationship, @Context GraphDatabaseService db) {
+
+
+
+        // Export graph to HDFS and send message to Spark when complete
+        PartitionedAnalysis partitionedAnalysis = new PartitionedAnalysis(type, label, groupRelationship, targetRelationship, db);
+        partitionedAnalysis.analyzePartitions();
 
         return Response.status(200)
                 .entity("{ result: 'success' }")

@@ -37,7 +37,7 @@ object algorithms {
   def pageRank(sc: SparkContext, path: String) : java.lang.Iterable[String] = {
     val graph = GraphLoader.edgeListFile(sc, path);
 
-    val v = graph.staticPageRank(2, 0.001).vertices
+    val v = graph.pageRank(.0001).vertices
 
     val results = v.map { row =>
       row._1 + " " + row._2 + "\n"
