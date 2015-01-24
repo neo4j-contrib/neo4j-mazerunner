@@ -141,9 +141,11 @@ public class WriterTest extends TestCase {
         processorMessage.setPartitionDescription(partitionDescription);
 
         BufferedReader br = FileUtil.readGraphAdjacencyList(processorMessage);
+        BufferedReader br2 = FileUtil.readGraphAdjacencyList(processorMessage);
 
         // Test parallel update
         PartitionedAnalysis.updatePartition(processorMessage, br, db);
+        PartitionedAnalysis.updatePartition(processorMessage, br2, db);
     }
 
     /**

@@ -232,8 +232,14 @@ public class Writer {
             Double weight = Double.parseDouble(rowVal[1]);
             Node targetNode = db.getNodeById(nodeId);
 
-            // Get relationship for analysis between partitionNode and targetNode
-            Iterator<Relationship> rels = partitionNode.getRelationships(withName(processorMessage.getAnalysis()), Direction.OUTGOING).iterator();
+            Iterator<Relationship> rels = db.traversalDescription()
+                    .depthFirst()
+                    .relationships(withName(processorMessage.getAnalysis()), Direction.INCOMING)
+                    .evaluator(Evaluators.fromDepth(1))
+                    .evaluator(Evaluators.toDepth(1))
+                    .traverse(targetNode)
+                    .relationships()
+                    .iterator();
 
             // Get the relationship to update
             Relationship updateRel = null;
@@ -241,7 +247,7 @@ public class Writer {
             // Scan the relationships
             while(rels.hasNext() && updateRel == null) {
                 Relationship currentRel = rels.next();
-                if(currentRel.getEndNode().getId() == nodeId)
+                if(currentRel.getStartNode().getId() == partitionNode.getId())
                     updateRel = currentRel;
             }
 
