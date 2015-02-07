@@ -47,7 +47,7 @@ After each image has been downloaded to your Docker server, run the following co
 
 To use an existing Neo4j database, make sure that the database store directory, typically `data/graph.db`, is available on your host OS. Read the [setup guide](https://github.com/kbastani/docker-neo4j#start-neo4j-container) for *kbastani/docker-neo4j* for additional details.
 
-> Note: The kbastani/docker-neo4j image is running Neo4j 2.1.6. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
+> Note: The kbastani/docker-neo4j image is running Neo4j 2.1.7. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
 
 ### Use New Neo4j Database
 
@@ -81,9 +81,9 @@ The result of the analysis will set the property with `{analysis}` as the key on
     RETURN DISTINCT id(a) as id, a.pagerank as pagerank
     ORDER BY pagerank DESC
 
-## Usage Examples
+## Available Metrics
 
-To run graph analysis algorithms, HTTP GET request on the following Neo4j server endpoints:
+To begin graph analysis jobs on a particular metric, HTTP GET request on the following Neo4j server endpoints:
 
 ### PageRank
     
@@ -94,6 +94,16 @@ To run graph analysis algorithms, HTTP GET request on the following Neo4j server
 * The value of the `pagerank` property is a float data type, ex. `pagerank: 3.14159265359`.
 
 * PageRank is used to find the relative importance of a node within a set of connected nodes.
+
+### Closeness Centrality (New)
+
+    http://172.17.0.21:7474/service/mazerunner/analysis/closeness_centrality/FOLLOWS
+    
+* Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `closeness_centrality`.
+
+* The value of the `closeness_centrality` property is a float data type, ex. `pagerank: 0.1337`.
+
+* A key node centrality measure in networks is closeness centrality (Freeman, 1978; Opsahl et al., 2010; Wasserman and Faust, 1994). It is defined as the inverse of farness, which in turn, is the sum of distances to all other nodes.
 
 ### Triangle Counting
     
