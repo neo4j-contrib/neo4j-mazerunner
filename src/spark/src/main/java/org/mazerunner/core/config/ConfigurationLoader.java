@@ -31,7 +31,22 @@ public class ConfigurationLoader {
     private String hadoopHdfsPath;
     private String hadoopHdfsUri;
     private String mazerunnerRelationshipType;
+
+    public void setRabbitmqNodename(String rabbitmqNodename) {
+        this.rabbitmqNodename = rabbitmqNodename;
+    }
+
     private String rabbitmqNodename;
+
+    public String getDriverHost() {
+        return driverHost;
+    }
+
+    public void setDriverHost(String driverHost) {
+        this.driverHost = driverHost;
+    }
+
+    private String driverHost;
 
     public String getExecutorMemory() {
         return executorMemory;
@@ -93,11 +108,11 @@ public class ConfigurationLoader {
 
     public void initializeTest()
     {
-        hadoopSitePath = "/hadoop-2.4.1/conf/core-site.xml";
-        hadoopHdfsPath = "/hadoop-2.4.1/conf/hdfs-site.xml";
-        hadoopHdfsUri = "hdfs://0.0.0.0:9000";
+        hadoopSitePath = "/Users/kennybastani/hadoop-1.0.4/conf/core-site.xml";
+        hadoopHdfsPath = "/Users/kennybastani/hadoop-1.0.4/conf/hdfs-site.xml";
+        hadoopHdfsUri = "hdfs://ip-172-31-5-251.us-west-1.compute.internal:9000";
         mazerunnerRelationshipType = "CONNECTED_TO";
-        rabbitmqNodename = "localhost";
+        rabbitmqNodename = "ec2-54-183-26-46.us-west-1.compute.amazonaws.com";
         sparkHost = "local";
         appName = "mazerunner";
         executorMemory = "13g";

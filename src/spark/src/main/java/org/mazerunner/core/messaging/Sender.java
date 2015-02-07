@@ -3,6 +3,7 @@ package org.mazerunner.core.messaging;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.MessageProperties;
 import org.mazerunner.core.config.ConfigurationLoader;
 
 /**
@@ -19,7 +20,7 @@ import org.mazerunner.core.config.ConfigurationLoader;
  * the License.
  */
 public class Sender {
-    private static final String EXCHANGE_NAME = "processor";
+    private static final String TASK_QUEUE_NAME = "processor";
 
     public static void sendMessage(String message)
             throws java.io.IOException {
@@ -29,9 +30,11 @@ public class Sender {
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
-        channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
+        channel.queueDeclare(TASK_QUEUE_NAME, true, false, false, null);
 
-        channel.basicPublish(EXCHANGE_NAME, "", null, message.getBytes());
+        channel.basicPublish( "", TASK_QUEUE_NAME,
+                MessageProperties.PERSISTENT_TEXT_PLAIN,
+                message.getBytes());
         System.out.println(" [x] Sent '" + message + "'");
 
         channel.close();

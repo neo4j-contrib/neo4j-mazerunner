@@ -5,9 +5,11 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.mazerunner.core.algorithms;
 import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.models.ProcessorMessage;
+import org.mazerunner.core.models.ProcessorMode;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -25,11 +27,13 @@ import java.net.URISyntaxException;
 public class GraphProcessor {
 
     public static final String PROPERTY_GRAPH_UPDATE_PATH = "/neo4j/mazerunner/propertyUpdateList.txt";
+    public static final String PARTITIONED_PROPERTY_GRAPH_UPDATE_PATH = "/neo4j/mazerunner/update/jobs/{job_name}/propertyUpdateList.txt";
 
     public static final String TRIANGLE_COUNT = "triangle_count";
     public static final String CONNECTED_COMPONENTS = "connected_components";
     public static final String PAGERANK = "pagerank";
     public static final String STRONGLY_CONNECTED_COMPONENTS = "strongly_connected_components";
+    public static final String CLOSENESS_CENTRALITY = "closeness_centrality";
 
     public static JavaSparkContext javaSparkContext = null;
 
@@ -38,7 +42,7 @@ public class GraphProcessor {
             initializeSparkContext();
         }
 
-        String results = "";
+        Iterable<String> results = new ArrayList<>();
 
         // Routing
         switch (processorMessage.getAnalysis()) {
@@ -58,23 +62,33 @@ public class GraphProcessor {
                 // Route to StronglyConnectedComponents
                 results = algorithms.stronglyConnectedComponents(javaSparkContext.sc(), processorMessage.getPath());
                 break;
+            case CLOSENESS_CENTRALITY:
+                // Route to StronglyConnectedComponents
+                results = algorithms.closenessCentrality(javaSparkContext.sc(), processorMessage.getPath());
+                break;
             default:
                 // Analysis does not exist
                 System.out.println("Did not recognize analysis key: " + processorMessage.getAnalysis());
         }
 
-        // Set the output path
-        processorMessage.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH);
+
+        if(processorMessage.getMode() == ProcessorMode.Partitioned) {
+            processorMessage.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PARTITIONED_PROPERTY_GRAPH_UPDATE_PATH.replace("{job_name}", processorMessage.getPartitionDescription().getPartitionId().toString()));
+        } else {
+            // Set the output path
+            processorMessage.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + PROPERTY_GRAPH_UPDATE_PATH);
+        }
 
         // Write results to HDFS
         org.mazerunner.core.hdfs.FileUtil.writePropertyGraphUpdate(processorMessage, results);
     }
 
-    public static void initializeSparkContext() {
-        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName()).set("spark.master", ConfigurationLoader.getInstance().getSparkHost())
-                .set("spark.locality.wait", "3000")
-                .set("spark.executor.memory", ConfigurationLoader.getInstance().getExecutorMemory());
+    public static JavaSparkContext initializeSparkContext() {
+        SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName())
+                .setMaster(ConfigurationLoader.getInstance().getSparkHost());
 
         javaSparkContext = new JavaSparkContext(conf);
+
+        return javaSparkContext;
     }
 }

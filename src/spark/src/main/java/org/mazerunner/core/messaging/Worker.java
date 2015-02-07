@@ -34,7 +34,7 @@ import static org.kohsuke.args4j.ExampleMode.ALL;
 
 public class Worker {
 
-    private static final String EXCHANGE_NAME = "logs";
+    private static final String TASK_QUEUE_NAME = "jobs";
 
     @Option(name="--spark.app.name",usage="The Spark application name (e.g. mazerunner).",metaVar="<string>")
     private String sparkAppName = "mazerunner";
@@ -43,10 +43,16 @@ public class Worker {
     private String sparkExecutorMemory = "512m";
 
     @Option(name="--spark.master",usage="The Spark master URL (e.g. spark://localhost:7077).",metaVar="<url>")
-    private String sparkMaster;
+    private String sparkMaster = "local";
 
     @Option(name="--hadoop.hdfs",usage="The HDFS URL (e.g. hdfs://0.0.0.0:9000).", metaVar = "<url>")
-    private String hadoopHdfs;
+    private String hadoopHdfs = "hdfs://10.0.0.4:8020";
+
+    @Option(name="--spark.driver.host",usage="The host name of the Spark driver (eg. ec2-54-67-91-4.us-west-1.compute.amazonaws.com)", metaVar = "<url>")
+    private String driverHost = "mazerunner";
+
+    @Option(name="--rabbitmq.host",usage="The host name of the rabbitmq server.", metaVar = "<url>")
+    private String rabbitMqHost = "localhost";
 
     // receives other command line parameters than options
     @Argument
@@ -79,6 +85,8 @@ public class Worker {
             ConfigurationLoader.getInstance().setSparkHost(sparkMaster);
             ConfigurationLoader.getInstance().setAppName(sparkAppName);
             ConfigurationLoader.getInstance().setExecutorMemory(sparkExecutorMemory);
+            ConfigurationLoader.getInstance().setDriverHost(driverHost);
+            ConfigurationLoader.getInstance().setRabbitmqNodename(rabbitMqHost);
 
         } catch( CmdLineException e ) {
             // if there's a problem in the command line,
@@ -101,21 +109,23 @@ public class Worker {
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
-        channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
-        String queueName = channel.queueDeclare().getQueue();
-        channel.queueBind(queueName, EXCHANGE_NAME, "");
+        channel.queueDeclare(TASK_QUEUE_NAME, true, false, false, null);
+
+        channel.basicQos(20);
 
         // Initialize spark context
         GraphProcessor.initializeSparkContext();
 
-        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
-
         QueueingConsumer consumer = new QueueingConsumer(channel);
-        channel.basicConsume(queueName, true, consumer);
+        channel.basicConsume(TASK_QUEUE_NAME, false, consumer);
+
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
         while (true) {
             QueueingConsumer.Delivery delivery = consumer.nextDelivery();
             String message = new String(delivery.getBody());
+
+            System.out.println(" [x] Received '" + message + "'");
 
             // Deserialize message
             Gson gson = new Gson();
@@ -124,7 +134,8 @@ public class Worker {
             // Run PageRank
             GraphProcessor.processEdgeList(processorMessage);
 
-            System.out.println(" [x] Received '" + message + "'");
+            System.out.println(" [x] Done '" + message + "'");
+            channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
         }
     }
 }

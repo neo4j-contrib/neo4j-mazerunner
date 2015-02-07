@@ -9,6 +9,9 @@ USER root
 # Set the default HDFS and Spark hosts
 ENV SPARK_HOST local
 ENV HDFS_HOST hdfs://hdfs:9000
+ENV DRIVER_HOST mazerunner
+ENV RABBITMQ_HOST localhost
+ENV SPARK_EXECUTOR_MEMORY 6g
 ENV HADOOP_HOME /etc/hadoop
 ENV MAZERUNNER_HOME /etc/mazerunner
 ENV CLASSPATH /etc/hadoop/conf:/etc/hadoop/*:/etc/mazerunner/*:/etc/mazerunner/lib/*

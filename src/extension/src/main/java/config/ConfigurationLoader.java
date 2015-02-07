@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -67,7 +68,13 @@ public class ConfigurationLoader {
 
         hadoopSitePath = prop.getProperty(HADOOP_CORE_SITE_KEY);
         hadoopHdfsPath = prop.getProperty(HADOOP_HDFS_SITE_KEY);
+
+        // Inherit the environment variable for the HDFS path
+        Map<String, String> env = System.getenv();
         hadoopHdfsUri = java.net.URLDecoder.decode(prop.getProperty(HADOOP_HDFS_URI), "UTF-8");
+        if(env.containsKey("HDFS_HOST"))
+            hadoopHdfsUri = env.get("HDFS_HOST");
+
         mazerunnerRelationshipType = prop.getProperty(MAZERUNNER_RELATIONSHIP_TYPE_KEY);
         rabbitmqNodename = prop.getProperty(RABBITMQ_NODENAME_KEY);
 
@@ -76,9 +83,9 @@ public class ConfigurationLoader {
 
     public void initializeTest()
     {
-        hadoopSitePath = "../conf/hadoop/core-site.xml";
-        hadoopHdfsPath = "../conf/hadoop/hdfs-site.xml";
-        hadoopHdfsUri = "hdfs://172.17.0.207:9000";
+        hadoopSitePath = "/etc/hadoop/core-site.xml";
+        hadoopHdfsPath = "/etc/hadoop/hdfs-site.xml";
+        hadoopHdfsUri = "hdfs://0.0.0.0:8020";
         mazerunnerRelationshipType = "CONNECTED_TO";
         rabbitmqNodename = "localhost";
     }

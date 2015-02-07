@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.Iterator;
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -36,16 +37,19 @@ public class FileUtil {
      * @throws URISyntaxException
      * @throws IOException
      */
-    public static void writePropertyGraphUpdate(ProcessorMessage processorMessage, String nodeList) throws URISyntaxException, IOException {
+    public static void writePropertyGraphUpdate(ProcessorMessage processorMessage, Iterable<String> nodeList) throws URISyntaxException, IOException {
         // Write the nodeList results to HDFS
-        writeListFile(processorMessage.getPath(), nodeList);
+        int lineCount = writeListFile(processorMessage.getPath(), nodeList.iterator());
 
-        // Serialize the processor message
-        Gson gson = new Gson();
-        String message = gson.toJson(processorMessage);
+        // Make sure there are results to return
+        if(lineCount > 0) {
+            // Serialize the processor message
+            Gson gson = new Gson();
+            String message = gson.toJson(processorMessage);
 
-        // Notify Neo4j that a property update list is available for processing
-        Sender.sendMessage(message);
+            // Notify Neo4j that a property update list is available for processing
+            Sender.sendMessage(message);
+        }
     }
 
     /**
@@ -55,20 +59,23 @@ public class FileUtil {
      * @throws IOException
      * @throws URISyntaxException
      */
-    public static void writeListFile(String path, String nodeList) throws IOException, URISyntaxException {
+    public static int writeListFile(String path, Iterator<String> nodeList) throws IOException, URISyntaxException {
         FileSystem fs = getHadoopFileSystem();
         Path updateFilePath = new Path(path);
         BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(updateFilePath,true)));
 
-        br.write("# Node Property Value List");
-        BufferedReader nodeListReader = new BufferedReader(new StringReader(nodeList));
+        br.write("# Node Property Value List\n");
+        int lineCount = 0;
 
-        String line;
-        while((line = nodeListReader.readLine()) != null) {
-            br.write( "\n" + line);
+        while(nodeList.hasNext()) {
+            br.write(nodeList.next());
+            lineCount++;
         }
+
         br.flush();
         br.close();
+
+        return lineCount;
     }
 
     /**

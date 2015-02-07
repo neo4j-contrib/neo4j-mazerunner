@@ -34,6 +34,7 @@ public class ParallelWriter extends RecursiveAction {
     private int mLength;
     private Integer fullSize;
     private Integer reportBlockSize;
+    private String relationshipType;
 
     /**
      * Instantiate an instance of ParallelBatchTransaction to perform distributed computation.
@@ -45,7 +46,7 @@ public class ParallelWriter extends RecursiveAction {
      * @param fullSize The fullSize is the unchanged size of the initial Spliterator[] from the original method call context.
      * @param bufferedWriter A reference to the BufferedWriter that will be used to write to HDFS.
      */
-    public ParallelWriter(Spliterator<Node>[] src, int start, int length, GraphDatabaseService db, BufferedWriter bufferedWriter, Integer fullSize, Integer reportBlockSize) {
+    public ParallelWriter(Spliterator<Node>[] src, int start, int length, GraphDatabaseService db, BufferedWriter bufferedWriter, Integer fullSize, Integer reportBlockSize, String relationshipType) {
         this.mSource = src;
         this.bufferedWriter = bufferedWriter;
         this.db = db;
@@ -53,6 +54,7 @@ public class ParallelWriter extends RecursiveAction {
         this.mLength = length;
         this.fullSize = fullSize;
         this.reportBlockSize = reportBlockSize;
+        this.relationshipType = relationshipType;
     }
 
     @Override
@@ -68,8 +70,8 @@ public class ParallelWriter extends RecursiveAction {
 
         int split = mLength / 2;
 
-        invokeAll(new ParallelWriter(mSource, mStart, split, db, bufferedWriter, fullSize, reportBlockSize),
-                  new ParallelWriter(mSource, mStart + split, mLength - split, db, bufferedWriter, fullSize, reportBlockSize));
+        invokeAll(new ParallelWriter(mSource, mStart, split, db, bufferedWriter, fullSize, reportBlockSize, relationshipType),
+                  new ParallelWriter(mSource, mStart + split, mLength - split, db, bufferedWriter, fullSize, reportBlockSize, relationshipType));
     }
 
     /**
@@ -83,7 +85,7 @@ public class ParallelWriter extends RecursiveAction {
         for(int i = mStart; i < mStart + mLength; i++) {
             mSource[i].forEachRemaining(n -> {
                 try {
-                    Writer.writeBlockForNode(n, db, bufferedWriter, reportBlockSize);
+                    Writer.writeBlockForNode(n, db, bufferedWriter, reportBlockSize, relationshipType);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

@@ -8,6 +8,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
+import jobs.PartitionedAnalysis;
 import models.ProcessorMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import translation.Writer;
@@ -35,7 +36,7 @@ public class BatchWriterService extends AbstractScheduledService {
         }
     }
 
-    private static final String EXCHANGE_NAME = "processor";
+    private static final String TASK_QUEUE_NAME = "processor";
 
     @Override
     protected void runOneIteration() throws Exception {
@@ -46,33 +47,52 @@ public class BatchWriterService extends AbstractScheduledService {
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
-        channel.exchangeDeclare(EXCHANGE_NAME, "fanout");
-        String queueName = channel.queueDeclare().getQueue();
-        channel.queueBind(queueName, EXCHANGE_NAME, "");
+        channel.queueDeclare(TASK_QUEUE_NAME, true, false, false, null);
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
-        System.out.println(" [*] Waiting for processor messages.");
+        channel.basicQos(1);
 
         QueueingConsumer consumer = new QueueingConsumer(channel);
-        channel.basicConsume(queueName, true, consumer);
+        channel.basicConsume(TASK_QUEUE_NAME, false, consumer);
 
         while (true) {
-            QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-            String message = new String(delivery.getBody());
+            try {
+                QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+                String message = new String(delivery.getBody());
 
-            System.out.println(" [x] Received processor message '" + message + "'");
+                System.out.println(" [x] Received processor message '" + message + "'");
 
-            // Deserialize the processor message
-            Gson gson = new Gson();
-            ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
+                // Deserialize the processor message
+                Gson gson = new Gson();
+                ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
 
-            // Open the node property update list file from HDFS
-            BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
+                // Open the node property update list file from HDFS
+                BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
 
-            // Stream the the updates as parallel transactions to Neo4j
-            Writer.asyncUpdate(bufferedReader, graphDb, processorMessage.getAnalysis());
+                switch (processorMessage.getMode()) {
+                    case Partitioned:
+                        PartitionedAnalysis.updatePartition(processorMessage, bufferedReader, graphDb);
+                        break;
+                    case Unpartitioned:
+                        // Stream the the updates as parallel transactions to Neo4j
+                        Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
+                        break;
+                }
 
-            // Close the stream
-            bufferedReader.close();
+                // Close the stream
+                bufferedReader.close();
+
+                System.out.println(" [x] Done");
+
+                channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            } catch (Exception ex) {
+                System.out.println(ex.getMessage());
+                System.out.println("Waiting...");
+
+                // Hold on error cycle to prevent high throughput writes to console log
+                Thread.sleep(5000);
+                System.out.println("Recovered...");
+            }
         }
     }
 

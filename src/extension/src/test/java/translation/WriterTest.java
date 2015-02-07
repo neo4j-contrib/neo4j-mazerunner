@@ -1,9 +1,14 @@
 package translation;
 
+import com.google.gson.Gson;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
+import jobs.PartitionedAnalysis;
 import junit.framework.TestCase;
+import messaging.Worker;
+import models.PartitionDescription;
 import models.ProcessorMessage;
+import models.ProcessorMode;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
@@ -11,6 +16,7 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import java.io.*;
@@ -38,12 +44,24 @@ public class WriterTest extends TestCase {
         Transaction tx = db.beginTx();
         List<Node> nodes = new ArrayList<>();
 
-        int max = 60000;
+        int max = 10000;
+
+        Node partitionNode = db.createNode();
+        partitionNode.addLabel(DynamicLabel.label("Category"));
+        int count = 0;
+        int partitionBlockCount = 50;
 
         // Create nodes
         for (int i = 0; i < max; i++) {
             nodes.add(db.createNode());
             nodes.get(i).addLabel(DynamicLabel.label("Node"));
+            partitionNode.createRelationshipTo(nodes.get(i), withName("HAS_CATEGORY"));
+            count++;
+            if(count >= partitionBlockCount && i != max - 1) {
+                count = 0;
+                partitionNode = db.createNode();
+                partitionNode.addLabel(DynamicLabel.label("Category"));
+            }
         }
 
         // Create PageRank test graph
@@ -73,21 +91,39 @@ public class WriterTest extends TestCase {
     }
 
     @Test
+    public void testPartitionedAnalysis() throws Exception {
+        GraphDatabaseService db = setUpDb();
+
+        // Use test configurations
+        ConfigurationLoader.testPropertyAccess = true;
+
+        createSampleGraph(db);
+
+        // Export graph to HDFS and send message to Spark when complete
+        PartitionedAnalysis partitionedAnalysis = new PartitionedAnalysis("pagerank", "Category", "HAS_CATEGORY", "CONNECTED_TO", db);
+        partitionedAnalysis.analyzePartitions();
+    }
+
+    @Test
     public void testParallelUpdate() throws Exception {
 
         GraphDatabaseService db = setUpDb();
 
-        Transaction tx = db.beginTx();
+        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
 
 
         // Use test configurations
         ConfigurationLoader.testPropertyAccess = true;
 
+        Node nodePartition = db.createNode();
+        nodePartition.addLabel(DynamicLabel.label("Category"));
+
+        PartitionDescription partitionDescription = new PartitionDescription(nodePartition.getId(), "Category");
 
         // Create sample PageRank result
         String nodeList = "";
 
-        for(int i = 0; i < 50000; i++)
+        for(int i = 0; i < 100; i++)
         {
             db.createNode();
             nodeList += i + " .001\n";
@@ -101,11 +137,15 @@ public class WriterTest extends TestCase {
 
         writeListFile(path, nodeList);
 
-        ProcessorMessage processorMessage = new ProcessorMessage(path, "pagerank");
+        ProcessorMessage processorMessage = new ProcessorMessage(path, "pagerank", ProcessorMode.Partitioned);
+        processorMessage.setPartitionDescription(partitionDescription);
+
         BufferedReader br = FileUtil.readGraphAdjacencyList(processorMessage);
+        BufferedReader br2 = FileUtil.readGraphAdjacencyList(processorMessage);
 
         // Test parallel update
-        Writer.asyncUpdate(br, db, processorMessage.getAnalysis());
+        PartitionedAnalysis.updatePartition(processorMessage, br, db);
+        PartitionedAnalysis.updatePartition(processorMessage, br2, db);
     }
 
     /**
@@ -134,5 +174,20 @@ public class WriterTest extends TestCase {
     private static GraphDatabaseService setUpDb()
     {
         return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+    }
+
+    public void testSendProcessorMessage() throws Exception {
+        ConfigurationLoader.testPropertyAccess=true;
+
+        // Serialize processor message
+        ProcessorMessage message = new ProcessorMessage("", "strongly_connected_components", ProcessorMode.Partitioned);
+        PartitionDescription partitionDescription = new PartitionDescription((long) 200, "Category");
+        message.setPartitionDescription(partitionDescription);
+        message.setPath(ConfigurationLoader.getInstance().getHadoopHdfsUri() + Writer.EDGE_LIST_RELATIVE_FILE_PATH);
+        Gson gson = new Gson();
+        String strMessage = gson.toJson(message);
+
+        // Send message to the Spark graph processor
+        Worker.sendMessage(strMessage);
     }
 }
