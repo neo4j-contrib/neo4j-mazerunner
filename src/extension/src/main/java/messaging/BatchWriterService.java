@@ -56,34 +56,43 @@ public class BatchWriterService extends AbstractScheduledService {
         channel.basicConsume(TASK_QUEUE_NAME, false, consumer);
 
         while (true) {
-            QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-            String message = new String(delivery.getBody());
+            try {
+                QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+                String message = new String(delivery.getBody());
 
-            System.out.println(" [x] Received processor message '" + message + "'");
+                System.out.println(" [x] Received processor message '" + message + "'");
 
-            // Deserialize the processor message
-            Gson gson = new Gson();
-            ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
+                // Deserialize the processor message
+                Gson gson = new Gson();
+                ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
 
-            // Open the node property update list file from HDFS
-            BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
+                // Open the node property update list file from HDFS
+                BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
 
-            switch (processorMessage.getMode()) {
-                case Partitioned:
-                    PartitionedAnalysis.updatePartition(processorMessage, bufferedReader, graphDb);
-                    break;
-                case Unpartitioned:
-                    // Stream the the updates as parallel transactions to Neo4j
-                    Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
-                    break;
+                switch (processorMessage.getMode()) {
+                    case Partitioned:
+                        PartitionedAnalysis.updatePartition(processorMessage, bufferedReader, graphDb);
+                        break;
+                    case Unpartitioned:
+                        // Stream the the updates as parallel transactions to Neo4j
+                        Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
+                        break;
+                }
+
+                // Close the stream
+                bufferedReader.close();
+
+                System.out.println(" [x] Done");
+
+                channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            } catch (Exception ex) {
+                System.out.println(ex.getMessage());
+                System.out.println("Waiting...");
+
+                // Hold on error cycle to prevent high throughput writes to console log
+                Thread.sleep(5000);
+                System.out.println("Recovered...");
             }
-
-            // Close the stream
-            bufferedReader.close();
-
-            System.out.println(" [x] Done" );
-
-            channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
         }
     }
 

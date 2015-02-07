@@ -32,7 +32,7 @@ public class MazerunnerService {
     @Path("/warmup")
     public Response warmup(@Context GraphDatabaseService db) {
         return Response.status(200)
-                .entity("{ result: 'success' }")
+                .entity("{ \"result\": \"success\" }")
                 .type(MediaType.APPLICATION_JSON).build();
     }
 
@@ -59,7 +59,7 @@ public class MazerunnerService {
         }
 
         return Response.status(200)
-                .entity("{ result: 'success' }")
+                .entity("{ \"result\": \"success\" }")
                 .type(MediaType.APPLICATION_JSON).build();
     }
 
@@ -75,7 +75,7 @@ public class MazerunnerService {
         partitionedAnalysis.analyzePartitions();
 
         return Response.status(200)
-                .entity("{ result: 'success' }")
+                .entity("{ \"result\": \"success\" }")
                 .type(MediaType.APPLICATION_JSON).build();
     }
 
