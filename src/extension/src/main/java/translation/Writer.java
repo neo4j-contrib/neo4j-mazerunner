@@ -12,6 +12,7 @@ import org.apache.hadoop.fs.Path;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import java.io.BufferedReader;
@@ -140,7 +141,7 @@ public class Writer {
 
     public static Path exportSubgraphToHDFSParallel(GraphDatabaseService db) throws  IOException, URISyntaxException {
         FileSystem fs = FileUtil.getHadoopFileSystem();
-        Path pt = new Path(ConfigurationLoader.getInstance().getHadoopHdfsUri() + EDGE_LIST_RELATIVE_FILE_PATH);
+        Path pt = new Path(ConfigurationLoader.getInstance().getHadoopHdfsUri() + EDGE_LIST_RELATIVE_FILE_PATH.replace("{job_id}", ""));
         BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(pt)));
 
         Integer reportBlockSize = 20000;
@@ -196,7 +197,7 @@ public class Writer {
     }
 
     public static void writeBlockForNode(Node n, GraphDatabaseService db, BufferedWriter bufferedWriter, int reportBlockSize, String relationshipType) throws IOException {
-//        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
+        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
         Iterator<Relationship> rels = n.getRelationships(withName(relationshipType), Direction.OUTGOING).iterator();
 //        Stream<Relationship> relStream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(rels.iterator(), Spliterator.NONNULL), true);
         while(rels.hasNext()) {
@@ -358,7 +359,7 @@ public class Writer {
 
     public static Path exportSubgraphToHDFS(GraphDatabaseService db) throws IOException, URISyntaxException {
         FileSystem fs = FileUtil.getHadoopFileSystem();
-        Path pt = new Path(ConfigurationLoader.getInstance().getHadoopHdfsUri() + EDGE_LIST_RELATIVE_FILE_PATH);
+        Path pt = new Path(ConfigurationLoader.getInstance().getHadoopHdfsUri() + EDGE_LIST_RELATIVE_FILE_PATH.replace("/{job_id}", ""));
         BufferedWriter br=new BufferedWriter(new OutputStreamWriter(fs.create(pt)));
 
         Transaction tx = db.beginTx();
