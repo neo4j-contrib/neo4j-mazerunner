@@ -6,6 +6,8 @@ This docker image adds high-performance graph analytics to a [Neo4j graph databa
 
 *PageRank*
 
+*Closeness Centrality*
+
 *Triangle Counting*
 
 *Connected Components*
@@ -66,6 +68,7 @@ Graph analysis jobs are started by accessing the following endpoint:
 Replace `{analysis}` in the endpoint with one of the following analysis algorithms:
 
 - pagerank
+- closeness_centrality
 - triangle_count
 - connected_components
 - strongly_connected_components
