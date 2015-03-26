@@ -2,6 +2,8 @@ package org.mazerunner.core.processor;
 
 import junit.framework.TestCase;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.mazerunner.core.algorithms;
 import org.mazerunner.core.config.ConfigurationLoader;
@@ -14,6 +16,18 @@ import java.util.Arrays;
 import java.util.List;
 
 public class GraphProcessorTest extends TestCase {
+    JavaSparkContext javaSparkContext;
+
+    @Before
+    public void setUp() {
+        ConfigurationLoader.testPropertyAccess = true;
+        javaSparkContext = GraphProcessor.initializeSparkContext();
+    }
+
+    @After
+    public void tearDown() {
+        GraphProcessor.javaSparkContext.close();
+    }
 
     @Test
     public void testProcessEdgeList() throws Exception {
@@ -30,7 +44,7 @@ public class GraphProcessorTest extends TestCase {
                 "3 0"
         )).iterator());
 
-        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.TRIANGLE_COUNT, ProcessorMode.Partitioned));
+        GraphProcessor.processEdgeList(new ProcessorMessage(path, GraphProcessor.TRIANGLE_COUNT, ProcessorMode.Unpartitioned));
     }
 
     @Test
@@ -58,8 +72,8 @@ public class GraphProcessorTest extends TestCase {
 
         // Test writing the PageRank result to HDFS path
         FileUtil.writeListFile(path, nodeList.iterator());
-        JavaSparkContext javaSparkContext = GraphProcessor.initializeSparkContext();
-        Iterable<String> results = algorithms.closenessCentrality(javaSparkContext.sc(), path);
+
+        Iterable<String> results = algorithms.closenessCentrality(GraphProcessor.javaSparkContext.sc(), path);
         results.iterator().forEachRemaining(System.out::print);
     }
 }

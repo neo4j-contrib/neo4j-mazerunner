@@ -12,7 +12,6 @@ import org.apache.hadoop.fs.Path;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import java.io.BufferedReader;
@@ -197,9 +196,9 @@ public class Writer {
     }
 
     public static void writeBlockForNode(Node n, GraphDatabaseService db, BufferedWriter bufferedWriter, int reportBlockSize, String relationshipType) throws IOException {
-        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
+        Transaction tx = db.beginTx();
         Iterator<Relationship> rels = n.getRelationships(withName(relationshipType), Direction.OUTGOING).iterator();
-//        Stream<Relationship> relStream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(rels.iterator(), Spliterator.NONNULL), true);
+
         while(rels.hasNext()) {
             try {
                 Relationship rel = rels.next();

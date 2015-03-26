@@ -23,33 +23,33 @@ The Neo4j Mazerunner service in this image is a [unmanaged extension](http://neo
 Installation requires 3 docker image deployments, each containing a separate linked component.
 
 * *Hadoop HDFS* (sequenceiq/hadoop-docker:2.4.1)
-* *Neo4j Graph Database* (kbastani/docker-neo4j:latest)
-* *Apache Spark Service* (kbastani/neo4j-graph-analytics:latest)
+* *Neo4j Graph Database* (kbastani/docker-neo4j:2.2.0)
+* *Apache Spark Service* (kbastani/neo4j-graph-analytics:1.1.0)
 
 Pull the following docker images:
 
     docker pull sequenceiq/hadoop-docker:2.4.1
-    docker pull kbastani/docker-neo4j:latest
-    docker pull kbastani/neo4j-graph-analytics:latest
+    docker pull kbastani/docker-neo4j:2.2.0
+    docker pull kbastani/neo4j-graph-analytics:1.1.0
 
 After each image has been downloaded to your Docker server, run the following commands in order to create the linked containers.
 
     # Create HDFS
     docker run -i -t --name hdfs sequenceiq/hadoop-docker:2.4.1 /etc/bootstrap.sh -bash
-    
+
     # Create Mazerunner Apache Spark Service
-    docker run -i -t --name mazerunner --link hdfs:hdfs kbastani/neo4j-graph-analytics
-    
+    docker run -i -t --name mazerunner --link hdfs:hdfs kbastani/neo4j-graph-analytics:1.1.0
+
     # Create Neo4j database with links to HDFS and Mazerunner
     # Replace <user> and <neo4j-path>
     # with the location to your existing Neo4j database store directory
-    docker run -d -P -v /Users/<user>/<neo4j-path>/data:/opt/data --name graphdb --link mazerunner:mazerunner --link hdfs:hdfs kbastani/docker-neo4j
+    docker run -d -P -v /Users/<user>/<neo4j-path>/data:/opt/data --name graphdb --link mazerunner:mazerunner --link hdfs:hdfs kbastani/docker-neo4j:2.2.0
 
 ### Use Existing Neo4j Database
 
 To use an existing Neo4j database, make sure that the database store directory, typically `data/graph.db`, is available on your host OS. Read the [setup guide](https://github.com/kbastani/docker-neo4j#start-neo4j-container) for *kbastani/docker-neo4j* for additional details.
 
-> Note: The kbastani/docker-neo4j image is running Neo4j 2.1.7. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
+> Note: The kbastani/docker-neo4j:2.2.0 image is running Neo4j 2.2.0. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
 
 ### Use New Neo4j Database
 
@@ -89,9 +89,9 @@ The result of the analysis will set the property with `{analysis}` as the key on
 To begin graph analysis jobs on a particular metric, HTTP GET request on the following Neo4j server endpoints:
 
 ### PageRank
-    
+
     http://172.17.0.21:7474/service/mazerunner/analysis/pagerank/FOLLOWS
-    
+
 * Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `pagerank`.
 
 * The value of the `pagerank` property is a float data type, ex. `pagerank: 3.14159265359`.
@@ -101,7 +101,7 @@ To begin graph analysis jobs on a particular metric, HTTP GET request on the fol
 ### Closeness Centrality (New)
 
     http://172.17.0.21:7474/service/mazerunner/analysis/closeness_centrality/FOLLOWS
-    
+
 * Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `closeness_centrality`.
 
 * The value of the `closeness_centrality` property is a float data type, ex. `pagerank: 0.1337`.
@@ -109,7 +109,7 @@ To begin graph analysis jobs on a particular metric, HTTP GET request on the fol
 * A key node centrality measure in networks is closeness centrality (Freeman, 1978; Opsahl et al., 2010; Wasserman and Faust, 1994). It is defined as the inverse of farness, which in turn, is the sum of distances to all other nodes.
 
 ### Triangle Counting
-    
+
     http://172.17.0.21:7474/service/mazerunner/analysis/triangle_count/FOLLOWS
 
 * Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `triangle_count`.
@@ -123,7 +123,7 @@ To begin graph analysis jobs on a particular metric, HTTP GET request on the fol
 ### Connected Components
 
     http://172.17.0.21:7474/service/mazerunner/analysis/connected_components/FOLLOWS
-    
+
 * Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `connected_components`.
 
 * The value of `connected_components` property is an integer data type, ex. `connected_components: 181`.
@@ -132,10 +132,10 @@ To begin graph analysis jobs on a particular metric, HTTP GET request on the fol
 
 * Connected components are used to find isolated clusters, that is, a group of nodes that can reach every other node in the group through a *bidirectional* traversal.
 
-### Strongly Connected Components 
-    
+### Strongly Connected Components
+
     http://172.17.0.21:7474/service/mazerunner/analysis/strongly_connected_components/FOLLOWS
-    
+
 * Gets all nodes connected by the `FOLLOWS` relationship and updates each node with the property key `strongly_connected_components`.
 
 * The value of `strongly_connected_components` property is an integer data type, ex. `strongly_connected_components: 26`.

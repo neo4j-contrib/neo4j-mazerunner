@@ -5,7 +5,6 @@ import models.ProcessorMode;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 
 import java.io.IOException;
 import java.util.Spliterator;
@@ -87,7 +86,7 @@ public class ParallelBatchTransaction extends RecursiveAction {
      */
     protected void computeDirectly() throws IOException {
 
-        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
+        Transaction tx = db.beginTx();
 
         Node partitionNode = null;
 
