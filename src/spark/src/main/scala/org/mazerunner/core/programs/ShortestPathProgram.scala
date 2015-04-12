@@ -312,12 +312,21 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
    * @return a branch for the desired vertex
    */
   def traverseTo(item : VD, seq: Seq[VD]) : DecisionTree[VD] = {
+
+    if(seq.contains(this.root)) {
+      return null
+    }
+
     if(item == root) {
+      if(seq.contains(this.root)) {
+        return null
+      }
+
       this
     } else {
       val result = {
         if(seq.find(a => a.equals(item)).getOrElse(null) == null) {
-          for (branch <- branches; x = branch.traverseTo(item, seq ++: Seq[VD](branch.root)) if x != null) yield x
+          for (branch <- branches ; x = branch.traverseTo(item, seq ++ Seq[VD](this.root)) if x != null && !seq.contains(x)) yield x
         } else {
           Seq[DecisionTree[VD]]()
         }
@@ -325,25 +334,44 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
         .find(a => a != null)
         .getOrElse(null)
 
+      if(seq.contains(this.root)) {
+        return null
+      }
+
       result
     }
   }
 
+  def shortestPathTo(item : VD) : Seq[VD] = {
+    shortestPathTo(item, Seq[VD]())
+  }
 
   /**
    * Gets the shortest path to the item or else returns null
    * @param item is the id of the vertex to traverse to
    * @return the shortest path as a sequence of [[VD]]
    */
-  def shortestPathTo(item : VD) : Seq[VD] = {
+  def shortestPathTo(item : VD, seq: Seq[VD]) : Seq[VD] = {
+
+    if(seq.contains(this.root)) {
+      return null
+    }
+
     if(item == root) {
+      if(seq.contains(this.root)) {
+        return null
+      }
       Seq[VD](this.root)
     } else {
       val result = {
-        for (branch <- branches ; x = branch.shortestPathTo(item) if x != null) yield x
+        for (branch <- branches ; x = branch.shortestPathTo(item, seq ++ Seq[VD](this.root)) if x != null && !seq.contains(x)) yield x
       }.toSeq.sortBy(b => b.length).take(1)
         .find(a => a != null)
         .getOrElse(null)
+
+      if(seq.contains(this.root)) {
+        return null
+      }
 
       result match {
         case x: Seq[VD] => x.+:(root)
@@ -390,21 +418,26 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
     }
   }
 
+  def toGraph: com.github.mdr.ascii.graph.Graph[String] = {
+    toGraph(Seq[VD](), scala.collection.mutable.Set[(String, String)](), scala.collection.mutable.Set[String]())
+  }
+
   /**
    * Converts a [[DecisionTree]] to a [[com.github.mdr.ascii.graph.Graph]] which can be rendered in ASCII art
    * @return a [[com.github.mdr.ascii.graph.Graph]] that can be visualized as ASCII art
    */
-  def toGraph: com.github.mdr.ascii.graph.Graph[String] = {
-    val edges: scala.collection.mutable.Set[(String, String)] = scala.collection.mutable.Set[(String, String)]()
-    val vertices: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
-
+  def toGraph(seq : Seq[VD], edges: scala.collection.mutable.Set[(String, String)], vertices: scala.collection.mutable.Set[String]): com.github.mdr.ascii.graph.Graph[String] = {
     vertices.add(root.toString)
+    branches.foreach(a => if(!vertices.contains(a.root.toString)) vertices.add(a.root.toString))
     branches.map(a => (root.toString, a.root.toString)).foreach(a => edges.add(a))
+    val thisBranches = branches
 
-    branches.foreach(a => {
-      val thisGraph = a.toGraph
-      thisGraph.vertices.foreach(b => vertices.add(b))
-      thisGraph.edges.foreach(b => edges.add(b))
+    thisBranches.foreach(a => {
+      if(!seq.contains(a.root)) {
+        val thisGraph = a.toGraph(seq ++ Seq[VD](a.root), edges, vertices)
+        thisGraph.vertices.filter(b => b != a.root).foreach(b => vertices.add(b))
+        thisGraph.edges.foreach(b => edges.add(b))
+      }
     })
 
     com.github.mdr.ascii.graph.Graph(vertices.toList.toSet, edges.toList)

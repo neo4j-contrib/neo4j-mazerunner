@@ -33,7 +33,8 @@ class BetweennessCentralityProgram(@transient val graph : Graph[ShortestPathStat
       def copyTree(branch: DecisionTree[VertexId], item: VertexId, sequence: Seq[VertexId]) {
         branch.branches.foreach(a => {
           state.decisionTree.traverseTo(item).addLeaf(a.root)
-          copyTree(a, a.root, sequence ++: Seq[VertexId](a.root))
+          if(!sequence.contains(a.root))
+            copyTree(a, a.root, sequence ++: Seq[VertexId](a.root))
         })
       }
       copyTree(message.decisionTree.traverseTo(id), id, Seq[VertexId](id))
@@ -70,7 +71,8 @@ class BetweennessCentralityProgram(@transient val graph : Graph[ShortestPathStat
       def copyTree(branch: DecisionTree[VertexId], item: VertexId, sequence: Seq[VertexId]) {
         branch.branches.foreach(a => {
           state.decisionTree.traverseTo(item).addLeaf(a.root)
-          copyTree(a, a.root, sequence ++: Seq[VertexId](a.root))
+          if(!sequence.contains(a.root))
+            copyTree(a, a.root, sequence ++: Seq[VertexId](a.root))
         })
       }
       copyTree(message.decisionTree.traverseTo(message.srcVertex), message.srcVertex, Seq[VertexId](message.srcVertex))
