@@ -2,9 +2,12 @@ package org.mazerunner.core.programs
 
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
+import org.mazerunner.core.algorithms
 import org.mazerunner.core.config.ConfigurationLoader
 import org.mazerunner.core.processor.GraphProcessor
 import org.scalatest.FlatSpec
+
+import scala.collection.mutable
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -31,25 +34,26 @@ class ShortestPathTests  extends FlatSpec {
   // Create Spark context
   val sc = GraphProcessor.initializeSparkContext.sc
 
-
+  val vertexIds = sc.parallelize(Seq(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L)).collect().toSeq
 
   def fixture =
     new {
+      
       // Create an RDD for the vertices
       val vertices: RDD[(VertexId, ShortestPathState)] = sc.parallelize(Array(
-        (0L, new ShortestPathState(0L, 3L)),
-        (1L, new ShortestPathState(1L, 3L)),
-        (2L, new ShortestPathState(2L, 3L)),
-        (3L, new ShortestPathState(3L, 3L)),
-        (4L, new ShortestPathState(4L, 3L)),
-        (5L, new ShortestPathState(5L, 3L)),
-        (6L, new ShortestPathState(6L, 3L)),
-        (7L, new ShortestPathState(7L, 3L)),
-        (8L, new ShortestPathState(8L, 3L)),
-        (9L, new ShortestPathState(9L, 3L)),
-        (10L, new ShortestPathState(10L, 3L)),
-        (11L, new ShortestPathState(11L, 3L)),
-        (12L, new ShortestPathState(12L, 3L))))
+        (0L, new ShortestPathState(0L, vertexIds)),
+        (1L, new ShortestPathState(1L, vertexIds)),
+        (2L, new ShortestPathState(2L, vertexIds)),
+        (3L, new ShortestPathState(3L, vertexIds)),
+        (4L, new ShortestPathState(4L, vertexIds)),
+        (5L, new ShortestPathState(5L, vertexIds)),
+        (6L, new ShortestPathState(6L, vertexIds)),
+        (7L, new ShortestPathState(7L, vertexIds)),
+        (8L, new ShortestPathState(8L, vertexIds)),
+        (9L, new ShortestPathState(9L, vertexIds)),
+        (10L, new ShortestPathState(10L, vertexIds)),
+        (11L, new ShortestPathState(11L, vertexIds)),
+        (12L, new ShortestPathState(12L, vertexIds))))
 
       // Create an RDD for edges
       val edges: RDD[Edge[Int]] = sc.parallelize(Array(
@@ -69,47 +73,40 @@ class ShortestPathTests  extends FlatSpec {
         Edge(4L, 3L, 0)))
 
       // Build the initial Graph
-      val graph = Graph(vertices, edges, new ShortestPathState(-1L, -1L))
+      val graph = Graph(vertices, edges, new ShortestPathState(-1L, null))
     }
 
   "A node's state" should "have a decision tree" in {
     val graph = fixture.graph
 
-    val tree  = new DecisionTree[VertexId](0L)
-    val tree2 = new DecisionTree[VertexId](0L)
-//    tree.traverseTo(0L).addLeaf(1L)
-//    tree.traverseTo(0L).addLeaf(2L).addLeaf(3L).addLeaf(4L).addLeaf(5L)
-//    tree.traverseTo(4L).addLeaf(6L).addLeaf(9L)
-//    tree.traverseTo(4L).addLeaf(7L).addLeaf(8L).addLeaf(9L)
-//    tree.traverseTo(7L).addLeaf(9L)
-
+    val tree  = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
+    val tree2 = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
     tree.traverseTo(0L).addLeaf(1L).addLeaf(4L)
-    tree.traverseTo(0L).addLeaf(4L).addLeaf(3L)
+    tree2.traverseTo(0L).addLeaf(4L).addLeaf(3L)
     tree.traverseTo(1L).addLeaf(2L).addLeaf(3L)
+    tree.addBranch(tree2)
 
     System.out.println(tree.toString())
 
-    System.out.println(tree.allShortestPathsTo(0L))
-    System.out.println(tree.allShortestPathsTo(1L))
-    System.out.println(tree.allShortestPathsTo(2L))
-    System.out.println(tree.allShortestPathsTo(3L))
-    System.out.println(tree.allShortestPathsTo(4L))
+    val vertices : Seq[VertexId] = Seq[VertexId](0L, 1L, 2L, 3L, 4L)
 
 
+    for (l <- vertices) yield {
+      System.out.println("\n" + l + ": ")
+      System.out.println(tree.traverseTo(l).allShortestPathsTo(0L))
+      System.out.println(tree.traverseTo(l).allShortestPathsTo(1L))
+      System.out.println(tree.traverseTo(l).allShortestPathsTo(2L))
+      System.out.println(tree.traverseTo(l).allShortestPathsTo(3L))
+      System.out.println(tree.traverseTo(l).allShortestPathsTo(4L))
+    }
 
-    //val nodeList: List[String] = Arrays.asList("0 1\n", "0 4\n", "4 3\n", "1 4\n", "1 2\n", "2 3")
+    val results = sc.parallelize(vertices.map {
+      row => {
+        (row, vertices.map(vt => (vt, tree.traverseTo(row).allShortestPathsTo(vt))))
+      }
+    })
 
-//    // Get the shortest path and add it to the decision tree
-//    val shortestPath = tree.shortestPathTo(9L)
-//
-//    val shortestPathArray = shortestPath.toArray
-//
-//    for (x <- shortestPathArray; y = shortestPathArray.indexOf(x)) {
-//      if (y < shortestPath.length - 1)
-//        tree2.traverseTo(x).addLeaf(shortestPathArray(y + 1))
-//    }
-
-    System.out.println(tree2)
+    algorithms.betweennessCentrality(sc, results).foreach(println)
   }
 
 }

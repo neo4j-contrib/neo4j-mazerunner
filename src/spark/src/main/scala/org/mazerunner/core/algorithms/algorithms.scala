@@ -6,7 +6,7 @@ import org.apache.spark.graphx._
 import org.apache.spark.graphx.lib.ShortestPaths
 import org.apache.spark.graphx.lib.ShortestPaths.SPMap
 import org.apache.spark.rdd.RDD
-import org.mazerunner.core.programs.{MaximumValueProgram, ShortestPathProgram, ShortestPathState}
+import org.mazerunner.core.programs.{BetweennessCentralityProgram, MaximumValueProgram, ShortestPathState}
 
 import scala.collection.JavaConversions
 import scala.util.Random
@@ -113,41 +113,45 @@ object algorithms {
   def betweennessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     // Each vertex in the graph needs to count the number of times it belongs to
     // the shortest path between all pairs of nodes in the graph
-
-    // Note: This is a really expensive algorithm for Pregel because all vertices need to
-    // compute a single source shortest path
-
     val graph = GraphLoader.edgeListFile(sc, path)
 
-    val graphResults = graph.vertices.map { vx => vx._1}.collect()
-      .map(a => (a, singleSourceShortestPath(sc, a, graph)))
+    // Convert graph to traversable decision tree
+    val graphResults = singleSourceShortestPath(sc, graph)
 
-    // For each pair of vertices get the number of shortest paths between them
-    val numberShortestPathMap = sc.parallelize(sc.parallelize(graphResults.map(a => {
-      a._2.map(b => (math.max(a._1, b._1) + "_" + Math.min(a._1, b._1), {
-        for (j <- (b._2 match {
-          case x: Seq[Seq[VertexId]] => x
-          case null => Seq[Seq[VertexId]]()
-        }).toSeq) yield j
-      }.flatMap(d => d))).collect().toSet
-    })).flatMap(a => a).partitionBy(new spark.HashPartitioner(2)).groupByKey().map(a => (a._1, a._2.toSeq))
-      .map(a => new edgeMapper(a._1, math.max(a._2.size - 1, 0), a._2.flatMap(d => d)
-      .map(v => (v, 1.0 / math.max(a._2.size.toDouble - 1.0, 0.0))).toSeq))
-      .map(v => v.getCentrality).flatMap(v => v).collect())
+    val results: Iterable[String] = betweennessCentrality(sc, graphResults)
 
-    val partitioned = graph.vertices.map(t => (t._1, 0.0)).leftOuterJoin(numberShortestPathMap.partitionBy(new spark.HashPartitioner(2))
-      .reduceByKey(_ + _)).map(t => (t._1, t._2._2.getOrElse(0.0)))
+    JavaConversions.asJavaIterable(results.toIterable)
+  }
 
-      .sortBy(a => a._1, ascending = true)
-      .map {
+  def betweennessCentrality(sc: SparkContext, graphResults: RDD[(VertexId, Seq[(VertexId, Seq[Seq[VertexId]])])]): Iterable[String] = {
+    val results = sc.parallelize(graphResults.map(dstVertex => {
+      val results = dstVertex._2.map(v => {
+        if (v._2 != null) {
+          (v._1, v._2.map(vt => {
+            vt.drop(1).dropRight(1)
+          }).filter(vt => vt.size > 0))
+        } else {
+          (v._1, Seq[Seq[VertexId]]())
+        }
+      })
+        .map(srcVertex => {
+        val paths = srcVertex._2.length
+        val vertexMaps = srcVertex._2.flatMap(v => v)
+          .map(v => (v, 1.0 / paths.toDouble))
+
+        if (vertexMaps.length == 0) {
+          Seq[(VertexId, Double)]((srcVertex._1, 0.0))
+        } else {
+          vertexMaps
+        }
+      })
+      results
+    }).flatMap(v => v).collect().flatMap(v => v).map(v => v)).partitionBy(new spark.HashPartitioner(2))
+      .reduceByKey(_ + _)
+      .sortBy({ vx => vx._1}, ascending = true).map {
       row => row._1 + " " + row._2 + "\n"
     }.toLocalIterator.toIterable
-
-
-    val theResults = partitioned.toIterable
-
-
-    JavaConversions.asJavaIterable(theResults.toIterable)
+    results
   }
 
   def reduceByKey[K,V](collection: Traversable[Tuple2[K, V]])(implicit num: Numeric[V]) = {
@@ -171,32 +175,31 @@ object algorithms {
    * The single source shortest path (SSSP) computes the minimum distance for all vertices
    * in the graph to a single source vertex.
    * @param sc is the Spark Context, providing access to the initialized Spark engine.
-   * @param srcVertex is the id of the source vertex to compute minimum distance to
    * @param path is the file system path to an edge list to be loaded as a graph
    * @return a graph where all vertices have the minimum distance value to the srcVertex
    */
-  def singleSourceShortestPath(sc: SparkContext, srcVertex: VertexId, path: String): RDD[(VertexId, Seq[Seq[VertexId]])] = {
+  def singleSourceShortestPath(sc: SparkContext, path: String): RDD[(VertexId, Seq[(VertexId, Seq[Seq[VertexId]])])] = {
     // Load source graph
     val graph = GraphLoader.edgeListFile(sc, path)
 
-    singleSourceShortestPath(sc, srcVertex, graph)
+    singleSourceShortestPath(sc, graph)
   }
 
   /**
    * The single source shortest path (SSSP) computes the minimum distance for all vertices
    * in the graph to a single source vertex.
    * @param sc is the Spark Context, providing access to the initialized Spark engine.
-   * @param srcVertex is the id of the source vertex to compute minimum distance to
    * @param graph the graph to process
    * @return a graph where all vertices have the minimum distance value to the srcVertex
    */
-  def singleSourceShortestPath(sc: SparkContext, srcVertex: VertexId, graph: Graph[Int, Int]): RDD[(VertexId, Seq[Seq[VertexId]])] = {
+  def singleSourceShortestPath(sc: SparkContext, graph: Graph[Int, Int]): RDD[(VertexId, Seq[(VertexId, Seq[Seq[VertexId]])])] = {
+
+    val srcVertex = graph.vertices.map(a => a._1).collect().toSeq
 
     // Initialize vertex attributes to max int value
     val newVertices = graph.vertices.map {
       case (id, attr) =>
-        if (id == srcVertex) (id, new ShortestPathState(id, srcVertex))
-        else (id, new ShortestPathState(id, srcVertex))
+        (id, new ShortestPathState(id, srcVertex))
     }
 
     val newEdges = graph.edges.map {
@@ -208,7 +211,7 @@ object algorithms {
     val newGraph = Graph(newVertices, EdgeRDD.fromEdges(newEdges))
 
     // Run the shortest path program
-    val graphResult = new ShortestPathProgram(newGraph, srcVertex).run()
+    val graphResult = new BetweennessCentralityProgram(newGraph, srcVertex).run()
 
     val results = graphResult.vertices.map {
       row => {

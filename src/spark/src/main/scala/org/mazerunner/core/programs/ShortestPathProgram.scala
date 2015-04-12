@@ -12,14 +12,14 @@ import scala.collection.mutable
  * @author Kenny Bastani
  * The [[ShortestPathProgram]] calculates the single source shortest path for a graph
  */
-class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double], val source : VertexId)
+class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double], val source : Seq[VertexId])
   extends PregelProgram[ShortestPathState, ShortestPathState, Double] with Serializable {
 
   /**
    * For serialization purposes.
    * See: [[org.apache.spark.graphx.impl.GraphImpl]]
    */
-  protected def this() = this(null, 0)
+  protected def this() = this(null, Seq[VertexId]())
 
   /**
    *
@@ -29,9 +29,6 @@ class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double
    * @return an [[Int]] resulting from a comparison between current state and incoming state
    */
   override def vertexProgram(id: VertexId, state: ShortestPathState, message: ShortestPathState): ShortestPathState = {
-    //println("State for " + id + " -> " + state.srcVertex + " " + state.dstVertex + ": " + state.decisionTree + "\nMessage for "  + id + " -> " + state.srcVertex + " " + state.dstVertex + ": " + message.decisionTree)
-
-
     if(state.decisionTree.root != id) {
       val result: ShortestPathState = new ShortestPathState(id, source)
       return result
@@ -71,53 +68,69 @@ class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double
    */
   override def messageBroker(triplet: EdgeTriplet[ShortestPathState, Double]): Iterator[(VertexId, ShortestPathState)] = {
 
-    // Every edge in the graph will be activated once every super stage
-
-    if (triplet.srcAttr.srcVertex == -1L) {
-      val message: ShortestPathState = new ShortestPathState(triplet.srcId, source)
-      message.addToPath(triplet.dstId, triplet.srcId)
-      if(triplet.dstAttr.srcVertex != -1L) {
-        return Iterator.empty
-      } else {
-        return Iterator((triplet.srcId, message))
+    // This must be run for each vertex in the graph
+    if(triplet.srcAttr == null) {
+      return {
+        val results = for (vertexId <- source) yield {
+          val message: ShortestPathState = new ShortestPathState(triplet.srcId, source)
+          message.addToPath(triplet.dstId, triplet.srcId, vertexId)
+          (vertexId, message)
+        }
+        results.toIterator
       }
     }
 
-    if(triplet.srcId != triplet.srcAttr.dstVertex) {
-        if(triplet.dstAttr != null && triplet.srcAttr.srcVertex != -1L) {
-          // Check if the dstVertex is inactive
-          if(triplet.dstAttr.superState != SuperState.Inactive) {
-            // Check if the source vertex has visited this vertex yet
-            if(triplet.srcAttr.decisionTree.traverseTo(triplet.dstId) == null) {
-              // Check if dstVertex has any more moves
-              // Add this vertex to srcVertex's decision tree
-              if(triplet.srcAttr.addToPath(triplet.dstId, triplet.srcId)) {
-                return Iterator((triplet.srcId, triplet.srcAttr), (triplet.dstId, triplet.srcAttr))
-              } else {
-                return Iterator.empty
-              }
-            } else {
-              // Check if dstVertex has found a path to the destination
-              val dstCheck = triplet.dstAttr.decisionTree.traverseTo(triplet.dstAttr.dstVertex)
-              if(dstCheck != null) {
-                // Get the shortest path and replicate it to this vertex's decision tree
-                val shortestPath = triplet.dstAttr.decisionTree.shortestPathTo(triplet.dstAttr.dstVertex)
-                val shortestPathArray = shortestPath.toArray
-                for (x <- shortestPathArray; y = shortestPathArray.indexOf(x)) {
-                  if(y < shortestPath.length - 1)
-                    triplet.srcAttr.decisionTree.traverseTo(x).addLeaf(shortestPathArray(y + 1))
+    if(triplet.dstAttr == null) {
+      return {
+        val results = for (vertexId <- source) yield {
+          val message: ShortestPathState = new ShortestPathState(triplet.dstId, source)
+          message.addToPath(triplet.dstId, triplet.srcId, vertexId)
+          (vertexId, message)
+        }
+        results.toIterator
+      }
+    }
+
+    val results = for (vertexId <- source) yield {
+        if (triplet.srcId != vertexId) {
+          if (triplet.dstAttr != null && triplet.srcAttr.srcVertex != -1L) {
+            // Check if the dstVertex is inactive
+            if (triplet.dstAttr.superState != SuperState.Inactive) {
+              // Check if the source vertex has visited this vertex yet
+              if (triplet.srcAttr.decisionTree.traverseTo(triplet.dstId) == null) {
+                // Check if dstVertex has any more moves
+                // Add this vertex to srcVertex's decision tree
+                if (triplet.srcAttr.addToPath(triplet.dstId, triplet.srcId, vertexId)) {
+                  Seq[(VertexId, ShortestPathState)]((triplet.srcId, triplet.srcAttr), (triplet.dstId, triplet.srcAttr))
+                } else {
+                  Seq[(VertexId, ShortestPathState)]()
                 }
               } else {
-                // Traverse to the next path
-                return Iterator.empty
+                // Check if dstVertex has found a path to the destination
+                val dstCheck = triplet.dstAttr.decisionTree.traverseTo(vertexId)
+                if (dstCheck != null) {
+                  // Get the shortest path and replicate it to this vertex's decision tree
+                  val shortestPath = triplet.dstAttr.decisionTree.shortestPathTo(vertexId)
+                  val shortestPathArray = shortestPath.toArray
+                  for (x <- shortestPathArray; y = shortestPathArray.indexOf(x)) {
+                    if (y < shortestPath.length - 1)
+                      triplet.srcAttr.decisionTree.traverseTo(x).addLeaf(shortestPathArray(y + 1))
+                  }
+                }
+                Seq[(VertexId, ShortestPathState)]()
               }
+            } else {
+              Seq[(VertexId, ShortestPathState)]()
             }
+          } else {
+            Seq[(VertexId, ShortestPathState)]()
           }
+        } else {
+          Seq[(VertexId, ShortestPathState)]()
         }
       }
 
-
-    Iterator()
+    results.flatMap(a => a).toIterator
   }
 
   /**
@@ -136,7 +149,11 @@ class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double
  * @param srcVertex is the source vertex to traverse from
  * @param dstVertex is the destination vertex to traverse to
  */
-class ShortestPathState(val srcVertex: VertexId, val dstVertex: VertexId) extends Serializable {
+class ShortestPathState(val srcVertex: VertexId, val dstVertex: Seq[VertexId]) extends Serializable {
+
+  var neighborsIn : Seq[VertexId] = Seq()
+  var neighborsOut : Seq[VertexId] = Seq()
+  var stage : Int = 0
 
   /**
    * The [[SuperState]] is used to track whether or not this vertex has an optimized path to the destination
@@ -146,11 +163,11 @@ class ShortestPathState(val srcVertex: VertexId, val dstVertex: VertexId) extend
   /**
    * A [[DecisionTree]] is used to provide a stateful mechanism for finding the shortest path to the destination vertex
    */
-  val decisionTree = new DecisionTree[VertexId](srcVertex)
+  val decisionTree = new DecisionTree[VertexId](srcVertex, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
 
-  def getShortestPaths : Seq[Seq[VertexId]] = {
+  def getShortestPaths : Seq[(VertexId, Seq[Seq[VertexId]])] = {
     // Check if there is a path to the destination
-    decisionTree.allShortestPathsTo(dstVertex)
+    dstVertex.map(a => (a, decisionTree.allShortestPathsTo(a)))
   }
 
   /**
@@ -159,9 +176,9 @@ class ShortestPathState(val srcVertex: VertexId, val dstVertex: VertexId) extend
    * @param from is the branch to add the new leaf on
    * @return a [[Boolean]] representing whether or not the operation was successful
    */
-  def addToPath(to: VertexId, from: VertexId) : Boolean = {
+  def addToPath(to: VertexId, from: VertexId, dst: VertexId) : Boolean = {
 
-    if(from != dstVertex) {
+    if(from != dst) {
       val endNode = decisionTree.traverseTo(from)
       if(endNode != null) {
         if(endNode.traverseTo(to) == null) {
@@ -174,16 +191,19 @@ class ShortestPathState(val srcVertex: VertexId, val dstVertex: VertexId) extend
 
     if(thisEndNode != null) {
       if(thisEndNode.traverseTo(to) == null) {
-        return thisEndNode.addLeaf(to) != null
+        thisEndNode.addLeaf(to) != null
       } else {
         false
       }
     } else false
-
-    //to != dstVertex
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[ShortestPathState]
+
+  override def hashCode(): Int = {
+    val state = Seq(decisionTree, srcVertex, dstVertex)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
 
   override def equals(other: Any): Boolean = other match {
     case that: ShortestPathState =>
@@ -192,11 +212,6 @@ class ShortestPathState(val srcVertex: VertexId, val dstVertex: VertexId) extend
         srcVertex == that.srcVertex &&
         dstVertex == that.dstVertex
     case _ => false
-  }
-
-  override def hashCode(): Int = {
-    val state = Seq(decisionTree, srcVertex, dstVertex)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
 
@@ -213,12 +228,67 @@ object SuperState extends Enumeration with Serializable {
  * @param root is the id of the vertex that is at the base of this [[DecisionTree]]
  * @tparam VD is the vertex id type for the decision tree
  */
-class DecisionTree[VD](val root : VD) extends Serializable {
+class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTree[VD]]) extends Serializable {
 
   /**
    * The branches for this decision tree, consisting of a set of leaf vertices that have context to a traversable branch
    */
   var branches : scala.collection.mutable.SynchronizedSet[DecisionTree[VD]] = new scala.collection.mutable.HashSet[DecisionTree[VD]]() with mutable.SynchronizedSet[DecisionTree[VD]]
+
+  def cloneTree(newGraph: mutable.HashMap[VD, DecisionTree[VD]]): DecisionTree[VD] = {
+    val cloned = new DecisionTree[VD](root, newGraph)
+
+    // Clone all branches
+    cloned.branches.++=(for (tree <- branches) yield {
+      newGraph.getOrElseUpdate(tree.root, tree)
+      tree.cloneTree(newGraph)
+    })
+
+    cloned
+  }
+
+  override def clone(): DecisionTree[VD] = {
+    val cloned = new DecisionTree[VD](root, graph.clone())
+
+    // Clone all branches
+    cloned.branches.++=(for (tree <- branches) yield {
+      tree.clone()
+    })
+
+    cloned
+  }
+
+  def addBranch(branch : DecisionTree[VD]) : DecisionTree[VD] = {
+    addBranches(branch.branches)
+
+    branch
+  }
+
+  def addBranches(branches : scala.collection.mutable.SynchronizedSet[DecisionTree[VD]]) = {
+
+    for (branch <- branches ) yield {
+      // Get or put the decision tree into the global decision tree hash map
+      val treeBranch = graph.getOrElse(branch.root, null)
+
+      // Recursively update the graph
+      if(treeBranch == null) {
+        val newBranch : DecisionTree[VD] = branch.clone()
+        newBranch.graph = this.graph
+        this.graph synchronized { this.graph.put(newBranch.root, newBranch) }
+
+        this.addLeaf(newBranch.root)
+
+        branch.branches.foreach(a => addBranch(a))
+      } else {
+        treeBranch.addBranch(branch)
+        // Update tree branch
+        this.addLeaf(treeBranch.root)
+      }
+
+      branch
+    }
+
+  }
 
   /**
    * Adds a leaf vertex to this branch
@@ -226,9 +296,10 @@ class DecisionTree[VD](val root : VD) extends Serializable {
    * @return a new branch for this leaf
    */
   def addLeaf(leaf : VD) : DecisionTree[VD] = {
-    val newLeaf : DecisionTree[VD] = { new DecisionTree[VD](leaf) }
-    this.branches.add(newLeaf)
-    newLeaf
+    // Get or put the decision tree into the global decision tree hash map
+    val branch = graph.getOrElseUpdate(leaf, synchronized { new DecisionTree[VD](leaf, graph) })
+    this.branches.add(branch)
+    branch
   }
 
   /**
@@ -293,10 +364,14 @@ class DecisionTree[VD](val root : VD) extends Serializable {
   }
 
   def allShortestPathsTo(item : VD) : Seq[Seq[VD]] = {
+    allShortestPaths(item, 2, 0)
+  }
+
+  def allShortestPaths(item : VD, minDistance : Int, maxDistance : Int) : Seq[Seq[VD]] = {
     val shortestPath = shortestPathTo(item)
 
-    if(shortestPath != null && shortestPath.length > 2) {
-      val thisShortestPath = allShortestPathsTo(item, shortestPath.length, 1).map(a => a.tail.take(1))
+    if(shortestPath != null && shortestPath.length > minDistance) {
+      val thisShortestPath = allShortestPathsTo(item, shortestPath.length - 1, 0)
       if(thisShortestPath.length > 0) {
         thisShortestPath
       } else {

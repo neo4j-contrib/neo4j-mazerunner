@@ -35,21 +35,24 @@ class ShortestPathProgramTests extends FlatSpec {
 
   def fixture =
     new {
+
+      val vertexIds = sc.parallelize(Seq(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L)).collect().toSeq
+
       // Create an RDD for the vertices
       val vertices: RDD[(VertexId, ShortestPathState)] = sc.parallelize(Array(
-        (0L, new ShortestPathState(0L, 3L)),
-        (1L, new ShortestPathState(1L, 3L)),
-        (2L, new ShortestPathState(2L, 3L)),
-        (3L, new ShortestPathState(3L, 3L)),
-        (4L, new ShortestPathState(4L, 3L)),
-        (5L, new ShortestPathState(5L, 3L)),
-        (6L, new ShortestPathState(6L, 3L)),
-        (7L, new ShortestPathState(7L, 3L)),
-        (8L, new ShortestPathState(8L, 3L)),
-        (9L, new ShortestPathState(9L, 3L)),
-        (10L, new ShortestPathState(10L, 3L)),
-        (11L, new ShortestPathState(11L, 3L)),
-        (12L, new ShortestPathState(12L, 3L))))
+        (0L, new ShortestPathState(0L, vertexIds)),
+        (1L, new ShortestPathState(1L, vertexIds)),
+        (2L, new ShortestPathState(2L, vertexIds)),
+        (3L, new ShortestPathState(3L, vertexIds)),
+        (4L, new ShortestPathState(4L, vertexIds)),
+        (5L, new ShortestPathState(5L, vertexIds)),
+        (6L, new ShortestPathState(6L, vertexIds)),
+        (7L, new ShortestPathState(7L, vertexIds)),
+        (8L, new ShortestPathState(8L, vertexIds)),
+        (9L, new ShortestPathState(9L, vertexIds)),
+        (10L, new ShortestPathState(10L, vertexIds)),
+        (11L, new ShortestPathState(11L, vertexIds)),
+        (12L, new ShortestPathState(12L, vertexIds))))
 
       // Create an RDD for edges
       val edges: RDD[Edge[Int]] = sc.parallelize(Array(
@@ -69,7 +72,7 @@ class ShortestPathProgramTests extends FlatSpec {
         Edge(4L, 3L, 0)))
 
       // Build the initial Graph
-      val graph = Graph(vertices, edges, new ShortestPathState(-1L, -1L))
+      val graph = Graph(vertices, edges, new ShortestPathState(-1L, vertexIds))
     }
 
   /**
@@ -82,29 +85,36 @@ class ShortestPathProgramTests extends FlatSpec {
   "A node's state" should "have a decision tree" in {
     val graph = fixture.graph
 
+    val vertexIds = graph.vertices.map(a => a._1)
+
     // Get a vertex neighbor map
     val vertexNeighborMap = new PairRDDFunctions[VertexId, Array[(VertexId, ShortestPathState)]](graph.ops.collectNeighbors(EdgeDirection.Out)
       .map(a => (a._1, a._2) : (VertexId, Array[(VertexId, ShortestPathState)])))
     .collectAsMap()
 
-    // Get all paths to destination node as a decision tree
-    val results = graph.triplets.map(triplet => {
-      triplet.srcAttr.decisionTree.addLeaf(triplet.dstId)
-      def addLeaf(active : VertexId, subActive : VertexId) : Unit = new {
-        if(subActive != triplet.srcAttr.dstVertex) {
-          vertexNeighborMap(subActive).foreach(f => {
-            if(triplet.srcAttr.addToPath(f._1, subActive))
-              addLeaf(active, f._1)
-          })
-        }
-      }
-      addLeaf(triplet.srcId, triplet.dstId)
-      triplet.srcAttr
-    }).map(a => (a.srcVertex, a))
+    for (vertexId <- vertexIds) {
 
-    // Use collectAsMap to bring everything on the same thread
-    new PairRDDFunctions[VertexId, ShortestPathState](results).collectAsMap()
-      .foreach(p => println(p._2.decisionTree.toString))
+
+      // Get all paths to destination node as a decision tree
+      val results = graph.triplets.map(triplet => {
+        triplet.srcAttr.decisionTree.addLeaf(triplet.dstId)
+        def addLeaf(active: VertexId, subActive: VertexId): Unit = new {
+          if (subActive != vertexId) {
+            vertexNeighborMap(subActive).foreach(f => {
+              if (triplet.srcAttr.addToPath(f._1, subActive, vertexId))
+                addLeaf(active, f._1)
+            })
+          }
+        }
+        addLeaf(triplet.srcId, triplet.dstId)
+        triplet.srcAttr
+      }).map(a => (a.srcVertex, a))
+
+      // Use collectAsMap to bring everything on the same thread
+      new PairRDDFunctions[VertexId, ShortestPathState](results).collectAsMap()
+        .foreach(p => println(p._2.decisionTree.toString))
+
+    }
   }
 
 
