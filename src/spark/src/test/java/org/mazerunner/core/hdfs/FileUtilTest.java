@@ -1,6 +1,7 @@
 package org.mazerunner.core.hdfs;
 
 import junit.framework.TestCase;
+import org.junit.Test;
 import org.mazerunner.core.config.ConfigurationLoader;
 import org.mazerunner.core.models.ProcessorMessage;
 import org.mazerunner.core.models.ProcessorMode;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 
 public class FileUtilTest extends TestCase {
 
+    @Test
     public void testWritePropertyGraphUpdate() throws Exception {
 
         ConfigurationLoader.testPropertyAccess=true;
