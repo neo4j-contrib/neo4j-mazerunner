@@ -55,6 +55,12 @@ public class GraphProcessorTest {
         List<String> nodeListB = Arrays.asList("0 1\n", "1 4\n", "0 4\n", "4 3\n", "1 2\n", "2 3");
         String actualB = getBetweennessCentrality("b", nodeListB);
         assertEquals(expectedB, actualB);
+
+        // Test case C
+        String expectedC = "0 0.0\n" + "1 22.0\n" + "2 4.0\n" + "3 22.0\n" + "4 4.0\n" + "5 22.0\n" + "6 4.0\n" + "7 22.0\n" + "8 4.0\n" + "9 22.0\n" + "10 4.0";
+        List<String> nodeListC = Arrays.asList("2 1\n", "3 2\n", "4 3\n", "5 4\n", "6 5\n", "7 6\n", "8 7\n", "9 8\n", "10 9\n", "1 10\n", "1 3\n", "2 3\n", "3 5\n", "4 5\n", "5 7\n", "6 7\n", "7 9\n", "8 9\n", "9 1\n", "10 1");
+        String actualC = getBetweennessCentrality("c", nodeListC);
+        assertEquals(expectedC, actualC);
     }
 
     private String getBetweennessCentrality(String test, List<String> nodeList) throws IOException, URISyntaxException {

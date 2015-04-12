@@ -101,7 +101,7 @@ class ShortestPathProgramTests extends FlatSpec {
         def addLeaf(active: VertexId, subActive: VertexId): Unit = new {
           if (subActive != vertexId) {
             vertexNeighborMap(subActive).foreach(f => {
-              if (triplet.srcAttr.addToPath(f._1, subActive, vertexId))
+              if (triplet.srcAttr.addToPath(f._1, subActive))
                 addLeaf(active, f._1)
             })
           }
@@ -116,42 +116,4 @@ class ShortestPathProgramTests extends FlatSpec {
 
     }
   }
-
-
-
-  /**
-   * c.
-   * 1. The node's state must maintain memory of all shortest paths for each super step iteration
-   * a. Shortest paths are represented as branches of a decision tree for the node's state
-   * 2. The node's state must maintain a list of sub-active nodes that will be signaled at the start of the next iteration
-   * a. Sub-active nodes are the nodes on the end of each branch of the decision tree for a node's state
-   * 3. Each sub-active node must not be the destination node
-   * 4. Each sub-active node will receive a message from an active node and send a message back to the active node with a list of its outgoing edges and its current state
-   * 5. Each sub-active node will provide information back to the active node about its active state for the last iteration
-   * 6. A node can be dead, mortal, or immortal
-   * a. Dead nodes are inactive
-   * b. Immortal nodes cannot be active but can be sub-active
-   * c. Mortal nodes can be both active and sub-active
-   * 7. Dead nodes have no path to the destination node
-   * 8. Dead nodes will return back no outgoing edges to the source node, ending traversal for that branch
-   * 9. A node can become dead only if it is mortal
-   * 10. A node becomes dead when it has no outgoing edges and it is not the source/destination node
-   * 11. A node becomes dead when all branches of its decision tree have at least one dead node in it
-   * 12. When a mortal node receives a message back from a dead node, it updates its decision tree, killing branches with dead nodes
-   * 13. A mortal node is a node that has non-dead branches in its decision tree
-   * 14. A mortal node is a node that has no destination node in any branch of its decision tree
-   * 15. A mortal node becomes immortal when one of its branches ends at the destination node
-   * 16. Immortal nodes cannot become dead or mortal
-   * 17. When a sub-active node signals back to an active node, it will provide its status ([active, inactive], [dead, mortal, immortal])
-   */
-
-  "A Stack" should "pop values in last-in-first-out order" in {
-//    val tree : DecisionTree[VertexId] = new DecisionTree[VertexId](0L)
-//    tree.traverseTo(0L).addLeaf(1L).addLeaf(2L)
-//    tree.traverseTo(1L).addLeaf(3L).addLeaf(4L)
-//    tree.traverseTo(3L).addLeaf(5L)
-//
-//    println(tree)
-  }
-
 }

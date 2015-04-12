@@ -80,15 +80,13 @@ class ShortestPathTests  extends FlatSpec {
     val graph = fixture.graph
 
     val tree  = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
-    val tree2 = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
-    tree.traverseTo(0L).addLeaf(1L).addLeaf(4L)
-    tree2.traverseTo(0L).addLeaf(4L).addLeaf(3L)
-    tree.traverseTo(1L).addLeaf(2L).addLeaf(3L)
-    tree.addBranch(tree2)
+
+    tree.graph.put(0L, tree)
+    tree.traverseTo(0L).addLeaf(1L).addLeaf(0L).addLeaf(2L).addLeaf(3L).addLeaf(0L)
 
     System.out.println(tree.toString())
 
-    val vertices : Seq[VertexId] = Seq[VertexId](0L, 1L, 2L, 3L, 4L)
+    val vertices : Seq[VertexId] = Seq[VertexId](0L, 1L, 2L, 3L)
 
 
     for (l <- vertices) yield {
@@ -97,7 +95,6 @@ class ShortestPathTests  extends FlatSpec {
       System.out.println(tree.traverseTo(l).allShortestPathsTo(1L))
       System.out.println(tree.traverseTo(l).allShortestPathsTo(2L))
       System.out.println(tree.traverseTo(l).allShortestPathsTo(3L))
-      System.out.println(tree.traverseTo(l).allShortestPathsTo(4L))
     }
 
     val results = sc.parallelize(vertices.map {

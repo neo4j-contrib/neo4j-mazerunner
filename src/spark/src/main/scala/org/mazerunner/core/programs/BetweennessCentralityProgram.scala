@@ -24,28 +24,28 @@ class BetweennessCentralityProgram(@transient val graph : Graph[ShortestPathStat
    * @return a [[ShortestPathState]] resulting from a comparison between current state and incoming state
    */
   override def vertexProgram(id: VertexId, state: ShortestPathState, message: ShortestPathState): ShortestPathState = {
-    if(state.decisionTree.root != id) {
+    if (state.decisionTree.root != id) {
       val result: ShortestPathState = new ShortestPathState(id, source)
       return result
     }
 
-    if(message.decisionTree.traverseTo(id) != null) {
+    if (message.decisionTree.traverseTo(id) != null) {
       def copyTree(branch: DecisionTree[VertexId], item: VertexId, sequence: Seq[VertexId]) {
         branch.branches.foreach(a => {
           state.decisionTree.traverseTo(item).addLeaf(a.root)
           copyTree(a, a.root, sequence ++: Seq[VertexId](a.root))
         })
       }
-      copyTree(message.decisionTree.traverseTo(id), id,  Seq[VertexId](id))
+      copyTree(message.decisionTree.traverseTo(id), id, Seq[VertexId](id))
     }
 
-    for (x <- message.neighborsIn if x == id ) {
+    for (x <- message.neighborsIn if x == id) {
       if (!state.neighborsOut.contains(message.srcVertex)) {
         state.neighborsOut = state.neighborsOut ++ Seq[VertexId](message.srcVertex)
       }
     }
 
-    for (x <- message.neighborsOut if x == id ) {
+    for (x <- message.neighborsOut if x == id) {
       if (!state.neighborsIn.contains(message.srcVertex)) {
         state.neighborsIn = state.neighborsIn ++ Seq[VertexId](message.srcVertex)
       }
@@ -92,7 +92,7 @@ class BetweennessCentralityProgram(@transient val graph : Graph[ShortestPathStat
       return {
         val results = for (vertexId <- source) yield {
           val message: ShortestPathState = new ShortestPathState(triplet.srcId, source)
-          message.addToPath(triplet.srcId, triplet.dstId, vertexId)
+          message.addToPath(triplet.srcId, triplet.dstId)
           (vertexId, message)
         }
         results.toIterator
@@ -103,7 +103,7 @@ class BetweennessCentralityProgram(@transient val graph : Graph[ShortestPathStat
       return {
         val results = for (vertexId <- source) yield {
           val message: ShortestPathState = new ShortestPathState(triplet.dstId, source)
-          message.addToPath(triplet.dstId, triplet.srcId, vertexId)
+          message.addToPath(triplet.dstId, triplet.srcId)
           (vertexId, message)
         }
         results.toIterator
@@ -120,25 +120,29 @@ class BetweennessCentralityProgram(@transient val graph : Graph[ShortestPathStat
       triplet.srcAttr.neighborsOut = triplet.srcAttr.neighborsOut ++ Seq[VertexId](triplet.dstId)
     }
 
-
-    val result = for (vertexId <- source) yield {
+    {
       if (triplet.srcAttr.decisionTree.traverseTo(triplet.srcId) != null) {
-        if (triplet.srcAttr.addToPath(triplet.dstId, triplet.srcId, vertexId)) {
+        if (triplet.srcAttr.addToPath(triplet.dstId, triplet.srcId)) {
           Seq[(VertexId, ShortestPathState)]((triplet.srcAttr.srcVertex, triplet.srcAttr), (triplet.srcAttr.srcVertex, triplet.dstAttr))
         } else {
-          if (triplet.dstAttr.neighborsOut.exists(a => triplet.srcAttr.addToPath(a, triplet.dstId, vertexId))) {
-            Seq[(VertexId, ShortestPathState)]((triplet.srcAttr.srcVertex, triplet.srcAttr), (triplet.srcAttr.srcVertex, triplet.dstAttr))
+          if (triplet.dstAttr.neighborsOut.exists(a => triplet.srcAttr.addToPath(a, triplet.dstId))) {
+            Seq[(VertexId, ShortestPathState)]((triplet.srcAttr.srcVertex, triplet.srcAttr), (triplet.dstAttr.srcVertex, triplet.dstAttr))
           } else {
-            Seq[(VertexId, ShortestPathState)]()
+            val keys = triplet.srcAttr.decisionTree.graph.keys.size
+            if(combiner(triplet.srcAttr, triplet.dstAttr).decisionTree.graph.keys.size > keys) {
+              Seq[(VertexId, ShortestPathState)]((triplet.srcAttr.srcVertex, combiner(triplet.srcAttr, triplet.dstAttr)))
+            } else {
+              Seq[(VertexId, ShortestPathState)]()
+            }
+
           }
         }
       } else {
         Seq[(VertexId, ShortestPathState)]()
       }
-    }
-
-    result.flatMap(a => a).toIterator
+    }.toIterator
   }
+
 
   /**
    * This method wraps Spark's Pregel API entry point from the [[org.apache.spark.graphx.GraphOps]] class.

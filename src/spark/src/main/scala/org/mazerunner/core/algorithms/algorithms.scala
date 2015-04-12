@@ -113,7 +113,7 @@ object algorithms {
   def betweennessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     // Each vertex in the graph needs to count the number of times it belongs to
     // the shortest path between all pairs of nodes in the graph
-    val graph = GraphLoader.edgeListFile(sc, path)
+    val graph = GraphLoader.edgeListFile(sc, path, canonicalOrientation = false)
 
     // Convert graph to traversable decision tree
     val graphResults = singleSourceShortestPath(sc, graph)

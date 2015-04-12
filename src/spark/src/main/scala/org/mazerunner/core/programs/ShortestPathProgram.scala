@@ -73,7 +73,7 @@ class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double
       return {
         val results = for (vertexId <- source) yield {
           val message: ShortestPathState = new ShortestPathState(triplet.srcId, source)
-          message.addToPath(triplet.dstId, triplet.srcId, vertexId)
+          message.addToPath(triplet.dstId, triplet.srcId)
           (vertexId, message)
         }
         results.toIterator
@@ -84,7 +84,7 @@ class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double
       return {
         val results = for (vertexId <- source) yield {
           val message: ShortestPathState = new ShortestPathState(triplet.dstId, source)
-          message.addToPath(triplet.dstId, triplet.srcId, vertexId)
+          message.addToPath(triplet.dstId, triplet.srcId)
           (vertexId, message)
         }
         results.toIterator
@@ -100,7 +100,7 @@ class ShortestPathProgram(@transient val graph : Graph[ShortestPathState, Double
               if (triplet.srcAttr.decisionTree.traverseTo(triplet.dstId) == null) {
                 // Check if dstVertex has any more moves
                 // Add this vertex to srcVertex's decision tree
-                if (triplet.srcAttr.addToPath(triplet.dstId, triplet.srcId, vertexId)) {
+                if (triplet.srcAttr.addToPath(triplet.dstId, triplet.srcId)) {
                   Seq[(VertexId, ShortestPathState)]((triplet.srcId, triplet.srcAttr), (triplet.dstId, triplet.srcAttr))
                 } else {
                   Seq[(VertexId, ShortestPathState)]()
@@ -176,21 +176,21 @@ class ShortestPathState(val srcVertex: VertexId, val dstVertex: Seq[VertexId]) e
    * @param from is the branch to add the new leaf on
    * @return a [[Boolean]] representing whether or not the operation was successful
    */
-  def addToPath(to: VertexId, from: VertexId, dst: VertexId) : Boolean = {
+  def addToPath(to: VertexId, from: VertexId) : Boolean = {
 
-    if(from != dst) {
-      val endNode = decisionTree.traverseTo(from)
-      if(endNode != null) {
-        if(endNode.traverseTo(to) == null) {
-          return endNode.addLeaf(to) != null
-        } else false
+
+    val endNode = decisionTree.traverseTo(from)
+    if (endNode != null) {
+      if (endNode.traverseTo(to) == null) {
+        return endNode.addLeaf(to) != null
       } else false
-    }
+    } else false
+
 
     val thisEndNode = decisionTree.traverseTo(from)
 
-    if(thisEndNode != null) {
-      if(thisEndNode.traverseTo(to) == null) {
+    if (thisEndNode != null) {
+      if (thisEndNode.traverseTo(to) == null) {
         thisEndNode.addLeaf(to) != null
       } else {
         false
@@ -302,17 +302,25 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
     branch
   }
 
+  def traverseTo(item : VD) : DecisionTree[VD] = {
+    traverseTo(item, Seq[VD]())
+  }
+
   /**
    * Traverses the decision tree until it finds a branch that matches a supplied vertex id
    * @param item is the vertex id of the item to traverse to
    * @return a branch for the desired vertex
    */
-  def traverseTo(item : VD) : DecisionTree[VD] = {
+  def traverseTo(item : VD, seq: Seq[VD]) : DecisionTree[VD] = {
     if(item == root) {
       this
     } else {
       val result = {
-        for (branch <- branches ; x = branch.traverseTo(item) if x != null) yield x
+        if(seq.find(a => a.equals(item)).getOrElse(null) == null) {
+          for (branch <- branches; x = branch.traverseTo(item, seq ++: Seq[VD](branch.root)) if x != null) yield x
+        } else {
+          Seq[DecisionTree[VD]]()
+        }
       }.take(1)
         .find(a => a != null)
         .getOrElse(null)
