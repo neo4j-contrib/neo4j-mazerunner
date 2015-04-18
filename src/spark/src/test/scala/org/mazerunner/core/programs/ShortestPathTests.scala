@@ -1,13 +1,14 @@
 package org.mazerunner.core.programs
 
 import org.apache.spark.graphx._
+import org.apache.spark.graphx.lib.ShortestPaths
 import org.apache.spark.rdd.RDD
 import org.mazerunner.core.algorithms
 import org.mazerunner.core.config.ConfigurationLoader
 import org.mazerunner.core.processor.GraphProcessor
 import org.scalatest.FlatSpec
 
-import scala.collection.mutable
+import scala.collection.{JavaConversions, mutable}
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -81,29 +82,27 @@ class ShortestPathTests  extends FlatSpec {
 
     val tree  = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
 
-    tree.graph.put(0L, tree)
-    tree.traverseTo(0L).addLeaf(1L).addLeaf(0L).addLeaf(2L).addLeaf(3L).addLeaf(0L)
+    graph.edges.collect().foreach(ed => tree.addLeaf(ed.srcId).addLeaf(ed.dstId))
 
-    System.out.println(tree.toString())
+    val vertexIds = graph.vertices.map(v => v._1).cache().collect()
 
-    val vertices : Seq[VertexId] = Seq[VertexId](0L, 1L, 2L, 3L)
+    val sssp = ShortestPaths.run(graph, graph.vertices.map { vx => vx._1}.collect()).vertices.collect()
 
+    val graphResults = sc.parallelize(vertexIds).map(row => {
+      println("*** " + row)
+      (row, vertexIds.map(vt => {
+        (vt, tree.getNode(row).allShortestPathsTo(vt, sssp))
+      }))
+    }).collectAsync().get().toArray
 
-    for (l <- vertices) yield {
-      System.out.println("\n" + l + ": ")
-      System.out.println(tree.traverseTo(l).allShortestPathsTo(0L))
-      System.out.println(tree.traverseTo(l).allShortestPathsTo(1L))
-      System.out.println(tree.traverseTo(l).allShortestPathsTo(2L))
-      System.out.println(tree.traverseTo(l).allShortestPathsTo(3L))
+    val result = algorithms.betweennessCentrality(sc, graphResults)
+
+    val resultStream = JavaConversions.iterableAsScalaIterable(result)
+
+    for (x <- resultStream) {
+      println(x)
     }
 
-    val results = sc.parallelize(vertices.map {
-      row => {
-        (row, vertices.map(vt => (vt, tree.traverseTo(row).allShortestPathsTo(vt))))
-      }
-    })
-
-    algorithms.betweennessCentrality(sc, results).foreach(println)
   }
 
 }

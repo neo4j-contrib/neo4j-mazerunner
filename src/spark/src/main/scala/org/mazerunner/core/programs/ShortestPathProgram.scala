@@ -2,6 +2,7 @@ package org.mazerunner.core.programs
 
 import com.github.mdr.ascii.layout.GraphLayout
 import com.github.mdr.ascii.layout.prefs.LayoutPrefsImpl
+import org.apache.spark.graphx.lib.ShortestPaths.SPMap
 import org.apache.spark.graphx.{EdgeTriplet, Graph, VertexId}
 import org.mazerunner.core.abstractions.PregelProgram
 import org.mazerunner.core.programs.SuperState.SuperState
@@ -235,6 +236,8 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
    */
   var branches : scala.collection.mutable.SynchronizedSet[DecisionTree[VD]] = new scala.collection.mutable.HashSet[DecisionTree[VD]]() with mutable.SynchronizedSet[DecisionTree[VD]]
 
+  var distance : Int = -1
+
   def cloneTree(newGraph: mutable.HashMap[VD, DecisionTree[VD]]): DecisionTree[VD] = {
     val cloned = new DecisionTree[VD](root, newGraph)
 
@@ -299,6 +302,18 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
     // Get or put the decision tree into the global decision tree hash map
     val branch = graph.getOrElseUpdate(leaf, synchronized { new DecisionTree[VD](leaf, graph) })
     this.branches.add(branch)
+    branch
+  }
+
+  def addNode(leaf : VD) : DecisionTree[VD] = {
+    // Get or put the decision tree into the global decision tree hash map
+    val branch = graph.getOrElseUpdate(leaf, synchronized { new DecisionTree[VD](leaf, graph) })
+    branch
+  }
+
+  def getNode(leaf : VD) : DecisionTree[VD] = {
+    // Get or put the decision tree into the global decision tree hash map
+    val branch = graph.getOrElse(leaf, null)
     branch
   }
 
@@ -380,34 +395,65 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
     }
   }
 
-  def allShortestPathsTo(item : VD, distance : Int, depth : Int) : Seq[Seq[VD]] = {
+  object branchOrdering extends Ordering[DecisionTree[VD]] {
+    def compare(a:DecisionTree[VD], b:DecisionTree[VD]) = a.distance compare b.distance
+  }
+
+  def allShortestPathsTo(item : VD, distance : Int, depth : Int) : Array[Seq[VD]] = {
     if(depth > distance) return null
 
     if(item == root) {
-        Seq(Seq[VD](this.root))
+        Array(Seq[VD](this.root))
     } else {
       val result = {
-        for (branch <- branches ; x = branch.allShortestPathsTo(item, distance, depth + 1) if x != null) yield x
+        if (branches.size > 0) {
+          val minV = branches.min(branchOrdering)
+          for (branch <- branches.filter(b => b.distance == minV.distance); x = branch.allShortestPathsTo(item, distance, depth + 1) if x != null) yield x
+        } else {
+          null
+        }
       }
 
       result match {
-        case x: scala.collection.mutable.HashSet[Seq[Seq[VD]]] => {
-          result.flatMap(a => a.toSeq).map(a => Seq[VD](this.root) ++ a.toSeq).toSeq
+        case x: scala.collection.mutable.HashSet[Array[Seq[VD]]] => {
+          result.flatMap(a => a).map(a => Seq[VD](this.root) ++ a).toArray
         }
         case x => null
       }
     }
   }
 
+  def allShortestPathsTo(item : VD, graphRef : Array[(VertexId, SPMap)]) : Seq[Seq[VD]] = {
+    // Set the distances on all the vertices
+    graphRef.foreach(a => {
+      val distanceForVertex = a._2.getOrElse(item.asInstanceOf[VertexId], null)
+      if (distanceForVertex != null) {
+        val dt = graph.getOrElse(a._1.asInstanceOf[VD], null)
+        if (dt != null) {
+          dt.distance = distanceForVertex.asInstanceOf[Int]
+          graph.put(dt.root, dt)
+          this.graph = graph
+        }
+      }
+    })
+    allShortestPaths(item, 1, 0)
+  }
+
   def allShortestPathsTo(item : VD) : Seq[Seq[VD]] = {
-    allShortestPaths(item, 2, 0)
+    allShortestPaths(item, 1, 0)
   }
 
   def allShortestPaths(item : VD, minDistance : Int, maxDistance : Int) : Seq[Seq[VD]] = {
-    val shortestPath = shortestPathTo(item)
+    val shortestPath = {
+      if(distance == -1) {
+        return null
+      } else {
+        distance
+      }
+    }
 
-    if(shortestPath != null && shortestPath.length > minDistance) {
-      val thisShortestPath = allShortestPathsTo(item, shortestPath.length - 1, 0)
+    if(shortestPath > minDistance) {
+      val thisShortestPath = allShortestPathsTo(item, shortestPath, 0)
       if(thisShortestPath.length > 0) {
         thisShortestPath
       } else {
@@ -447,7 +493,7 @@ class DecisionTree[VD](val root : VD, var graph : mutable.HashMap[VD, DecisionTr
    * Renders the [[DecisionTree]] in ASCII art
    * @return a [[String]] that has a graph layout visualization in ASCII art of the [[DecisionTree]]
    */
-  override def toString: String = {
+  def renderGraph: String = {
     val layoutPrefs = LayoutPrefsImpl(unicode = true,
       explicitAsciiBends = true,
       compactify = false,

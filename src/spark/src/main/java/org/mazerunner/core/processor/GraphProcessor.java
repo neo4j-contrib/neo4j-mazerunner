@@ -69,7 +69,8 @@ public class GraphProcessor {
                 break;
             case BETWEENNESS_CENTRALITY:
                 // Route to BetweennessCentrality
-                results = algorithms.betweennessCentrality(javaSparkContext.sc(), processorMessage.getPath());
+                results = algorithms.inMemoryBetweennessCentrality(javaSparkContext.sc(), processorMessage.getPath());
+                break;
             default:
                 // Analysis does not exist
                 System.out.println("Did not recognize analysis key: " + processorMessage.getAnalysis());

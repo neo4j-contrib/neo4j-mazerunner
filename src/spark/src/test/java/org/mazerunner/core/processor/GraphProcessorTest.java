@@ -1,5 +1,7 @@
 package org.mazerunner.core.processor;
 
+import org.apache.spark.graphx.Graph;
+import org.apache.spark.graphx.util.GraphGenerators;
 import org.junit.Test;
 import org.mazerunner.core.algorithms;
 import org.mazerunner.core.config.ConfigurationLoader;
@@ -7,6 +9,7 @@ import org.mazerunner.core.hdfs.FileUtil;
 import org.mazerunner.core.models.ProcessorMessage;
 import org.mazerunner.core.models.ProcessorMode;
 import org.mazerunner.core.programs.DecisionTree;
+import scala.collection.JavaConversions;
 import scala.collection.mutable.HashMap;
 
 import java.io.IOException;
@@ -14,6 +17,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -44,10 +48,9 @@ public class GraphProcessorTest {
 
         // Test case A
         String expectedA = "0 0.0\n1 3.0\n2 4.0\n3 3.0\n4 0.0\n";
-        List<String> nodeListA = Arrays.asList("0 1\n", "1 2\n", "2 3\n", "3 4");
+        List<String> nodeListA = Arrays.asList("0 1\n", "1 2\n", "2 3\n", "3 4\n");
         String actualA = getBetweennessCentrality("a", nodeListA);
         assertEquals(expectedA, actualA);
-
 
         // Test case B
         String expectedB = "0 0.0\n1 1.0\n2 0.5\n3 0.0\n4 1.5\n";
@@ -57,10 +60,30 @@ public class GraphProcessorTest {
         assertEquals(expectedB, actualB);
 
         // Test case C
-        String expectedC = "1 27.0\n" + "2 4.0\n" + "3 27.0\n" + "4 4.0\n" + "5 27.0\n" + "6 4.0\n" + "7 27.0\n" + "8 4.0\n" + "9 22.0\n" + "10 4.0\n";
+        String expectedC = "1 22.0\n" + "2 4.0\n" + "3 22.0\n" + "4 4.0\n" + "5 22.0\n" + "6 4.0\n" + "7 22.0\n" + "8 4.0\n" + "9 22.0\n" + "10 4.0\n";
         List<String> nodeListC = Arrays.asList("2 1\n", "3 2\n", "4 3\n", "5 4\n", "6 5\n", "7 6\n", "8 7\n", "9 8\n", "10 9\n", "1 10\n", "1 3\n", "2 3\n", "3 5\n", "4 5\n", "5 7\n", "6 7\n", "7 9\n", "8 9\n", "9 1\n", "10 1");
         String actualC = getBetweennessCentrality("c", nodeListC);
         assertEquals(expectedC, actualC);
+    }
+
+    @Test
+    public void performanceTestBetweennessCentrality() throws Exception {
+
+        ConfigurationLoader.testPropertyAccess = true;
+
+        if (GraphProcessor.javaSparkContext == null)
+            GraphProcessor.initializeSparkContext();
+
+        // Generate random graph
+        Graph<Object, Object> graph = GraphGenerators.logNormalGraph(GraphProcessor.javaSparkContext.sc(), 500, 0, 4, 5, 423);
+
+        List<String> starGraph = JavaConversions.asJavaCollection(graph.edges().toLocalIterator().toIterable()).stream()
+                .map(a -> a.srcId() + " " + a.dstId() + "\n")
+                .collect(Collectors.toList());
+
+        System.out.println(starGraph);
+
+        System.out.println(getBetweennessCentrality("performance-graph", starGraph));
     }
 
     private String getBetweennessCentrality(String test, List<String> nodeList) throws IOException, URISyntaxException {
@@ -72,7 +95,7 @@ public class GraphProcessorTest {
 
         if(GraphProcessor.javaSparkContext == null)
             GraphProcessor.initializeSparkContext();
-        Iterable<String> results = algorithms.betweennessCentrality(GraphProcessor.javaSparkContext.sc(), path);
+        Iterable<String> results = algorithms.inMemoryBetweennessCentrality(GraphProcessor.javaSparkContext.sc(), path);
 
         StringBuffer sb = new StringBuffer();
 

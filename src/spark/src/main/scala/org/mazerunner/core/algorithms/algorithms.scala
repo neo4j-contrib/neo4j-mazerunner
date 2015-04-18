@@ -6,9 +6,9 @@ import org.apache.spark.graphx._
 import org.apache.spark.graphx.lib.ShortestPaths
 import org.apache.spark.graphx.lib.ShortestPaths.SPMap
 import org.apache.spark.rdd.RDD
-import org.mazerunner.core.programs.{BetweennessCentralityProgram, MaximumValueProgram, ShortestPathState}
+import org.mazerunner.core.programs.{BetweennessCentralityProgram, DecisionTree, MaximumValueProgram, ShortestPathState}
 
-import scala.collection.JavaConversions
+import scala.collection.{JavaConversions, mutable}
 import scala.util.Random
 
 /**
@@ -110,21 +110,34 @@ object algorithms {
     num.toDouble(ts.sum) / ts.size
   }
 
-  def betweennessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
-    // Each vertex in the graph needs to count the number of times it belongs to
-    // the shortest path between all pairs of nodes in the graph
-    val graph = GraphLoader.edgeListFile(sc, path, canonicalOrientation = false)
+  def inMemoryBetweennessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
 
-    // Convert graph to traversable decision tree
-    val graphResults = singleSourceShortestPath(sc, graph)
+    // Create a tree
+    val tree  = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
 
-    val results: Iterable[String] = betweennessCentrality(sc, graphResults)
+    val graph = GraphLoader.edgeListFile(sc, path)
 
-    JavaConversions.asJavaIterable(results.toIterable)
+    graph.edges.collect().foreach(ed => tree.addLeaf(ed.srcId).addLeaf(ed.dstId))
+
+    val vertexIds = graph.vertices.map(v => v._1).cache().collect()
+
+    val sssp = ShortestPaths.run(graph, graph.vertices.map { vx => vx._1}.collect()).vertices.collect()
+
+    val graphResults = sc.parallelize(vertexIds).map(row => {
+      println("*** " + row)
+      (row, vertexIds.map(vt => {
+        (vt, tree.getNode(row).allShortestPathsTo(vt, sssp))
+      }))
+    }).collectAsync().get().toArray
+
+    val result = algorithms.betweennessCentrality(sc, graphResults)
+
+
+    result
   }
 
-  def betweennessCentrality(sc: SparkContext, graphResults: RDD[(VertexId, Seq[(VertexId, Seq[Seq[VertexId]])])]): Iterable[String] = {
-    val results = sc.parallelize(graphResults.map(dstVertex => {
+  def betweennessCentrality(sc: SparkContext, graphResults: Array[(VertexId, Array[(VertexId, Seq[Seq[VertexId]])])]): java.lang.Iterable[String] = {
+    val results =sc.parallelize(graphResults.map(dstVertex => {
       val results = dstVertex._2.map(v => {
         if (v._2 != null) {
           (v._1, v._2.map(vt => {
@@ -146,12 +159,13 @@ object algorithms {
         }
       })
       results
-    }).flatMap(v => v).collect().flatMap(v => v).map(v => v)).partitionBy(new spark.HashPartitioner(2))
+    }).flatten[Seq[(VertexId, Double)]].map(a => a).flatten[(VertexId, Double)]).partitionBy(new spark.HashPartitioner(2))
       .reduceByKey(_ + _)
       .sortBy({ vx => vx._1}, ascending = true).map {
       row => row._1 + " " + row._2 + "\n"
-    }.toLocalIterator.toIterable
-    results
+    }.collect().toIterable
+
+    JavaConversions.asJavaIterable(results)
   }
 
   def reduceByKey[K,V](collection: Traversable[Tuple2[K, V]])(implicit num: Numeric[V]) = {
