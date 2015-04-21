@@ -34,6 +34,7 @@ public class GraphProcessor {
     public static final String PAGERANK = "pagerank";
     public static final String STRONGLY_CONNECTED_COMPONENTS = "strongly_connected_components";
     public static final String CLOSENESS_CENTRALITY = "closeness_centrality";
+    public static final String BETWEENNESS_CENTRALITY = "betweenness_centrality";
 
     public static JavaSparkContext javaSparkContext = null;
 
@@ -63,8 +64,12 @@ public class GraphProcessor {
                 results = algorithms.stronglyConnectedComponents(javaSparkContext.sc(), processorMessage.getPath());
                 break;
             case CLOSENESS_CENTRALITY:
-                // Route to StronglyConnectedComponents
+                // Route to ClosenessCentrality
                 results = algorithms.closenessCentrality(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            case BETWEENNESS_CENTRALITY:
+                // Route to BetweennessCentrality
+                results = algorithms.betweennessCentrality(javaSparkContext.sc(), processorMessage.getPath());
                 break;
             default:
                 // Analysis does not exist

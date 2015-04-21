@@ -40,10 +40,10 @@ public class Worker {
     private String sparkAppName = "mazerunner";
 
     @Option(name="--spark.executor.memory",usage="Amount of memory to use per executor process, in the same format as JVM memory strings (e.g. 512m, 2g). ", metaVar = "<string>")
-    private String sparkExecutorMemory = "512m";
+    private String sparkExecutorMemory = "4092m";
 
     @Option(name="--spark.master",usage="The Spark master URL (e.g. spark://localhost:7077).",metaVar="<url>")
-    private String sparkMaster = "local";
+    private String sparkMaster = "local[8]";
 
     @Option(name="--hadoop.hdfs",usage="The HDFS URL (e.g. hdfs://0.0.0.0:9000).", metaVar = "<url>")
     private String hadoopHdfs = "hdfs://0.0.0.0:9000";
