@@ -75,7 +75,7 @@ public class GraphProcessorTest {
             GraphProcessor.initializeSparkContext();
 
         // Generate random graph
-        Graph<Object, Object> graph = GraphGenerators.logNormalGraph(GraphProcessor.javaSparkContext.sc(), 500, 0, 4, 5, 423);
+        Graph<Object, Object> graph = GraphGenerators.logNormalGraph(GraphProcessor.javaSparkContext.sc(), 100, 0, 4, 5, 423);
 
         List<String> starGraph = JavaConversions.asJavaCollection(graph.edges().toLocalIterator().toIterable()).stream()
                 .map(a -> a.srcId() + " " + a.dstId() + "\n")

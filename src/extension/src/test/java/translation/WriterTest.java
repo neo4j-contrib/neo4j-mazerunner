@@ -16,7 +16,6 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import java.io.*;
@@ -109,7 +108,7 @@ public class WriterTest extends TestCase {
 
         GraphDatabaseService db = setUpDb();
 
-        Transaction tx = ((GraphDatabaseAPI)db).tx().unforced().begin();
+        Transaction tx = db.beginTx();
 
 
         // Use test configurations
@@ -173,7 +172,7 @@ public class WriterTest extends TestCase {
 
     private static GraphDatabaseService setUpDb()
     {
-        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        return new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     public void testSendProcessorMessage() throws Exception {

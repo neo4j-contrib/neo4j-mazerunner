@@ -108,9 +108,9 @@ public class ConfigurationLoader {
 
     public void initializeTest()
     {
-        hadoopSitePath = "/Users/kennybastani/hadoop-1.0.4/conf/core-site.xml";
-        hadoopHdfsPath = "/Users/kennybastani/hadoop-1.0.4/conf/hdfs-site.xml";
-        hadoopHdfsUri = "hdfs://10.0.0.4:8020";
+        hadoopSitePath = "/hadoop-2.4.1/conf/core-site.xml";
+        hadoopHdfsPath = "/hadoop-2.4.1/conf/hdfs-site.xml";
+        hadoopHdfsUri = "hdfs://0.0.0.0:9000";
         mazerunnerRelationshipType = "CONNECTED_TO";
         rabbitmqNodename = "localhost";
         sparkHost = "local";

@@ -25,13 +25,13 @@ The Neo4j Mazerunner service in this image is a [unmanaged extension](http://neo
 Installation requires 3 docker image deployments, each containing a separate linked component.
 
 * *Hadoop HDFS* (sequenceiq/hadoop-docker:2.4.1)
-* *Neo4j Graph Database* (kbastani/docker-neo4j:2.2.0)
+* *Neo4j Graph Database* (kbastani/docker-neo4j:2.2.1)
 * *Apache Spark Service* (kbastani/neo4j-graph-analytics:1.1.0)
 
 Pull the following docker images:
 
     docker pull sequenceiq/hadoop-docker:2.4.1
-    docker pull kbastani/docker-neo4j:2.2.0
+    docker pull kbastani/docker-neo4j:2.2.1
     docker pull kbastani/neo4j-graph-analytics:1.1.0
 
 After each image has been downloaded to your Docker server, run the following commands in order to create the linked containers.
@@ -45,13 +45,13 @@ After each image has been downloaded to your Docker server, run the following co
     # Create Neo4j database with links to HDFS and Mazerunner
     # Replace <user> and <neo4j-path>
     # with the location to your existing Neo4j database store directory
-    docker run -d -P -v /Users/<user>/<neo4j-path>/data:/opt/data --name graphdb --link mazerunner:mazerunner --link hdfs:hdfs kbastani/docker-neo4j:2.2.0
+    docker run -d -P -v /Users/<user>/<neo4j-path>/data:/opt/data --name graphdb --link mazerunner:mazerunner --link hdfs:hdfs kbastani/docker-neo4j:2.2.1
 
 ### Use Existing Neo4j Database
 
 To use an existing Neo4j database, make sure that the database store directory, typically `data/graph.db`, is available on your host OS. Read the [setup guide](https://github.com/kbastani/docker-neo4j#start-neo4j-container) for *kbastani/docker-neo4j* for additional details.
 
-> Note: The kbastani/docker-neo4j image is running Neo4j 2.1.7. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
+> Note: The kbastani/docker-neo4j:2.2.1 image is running Neo4j 2.2.1. If you point it to an older database store, that database may become unable to be attached to a previous version of Neo4j. Make sure you back up your store files before proceeding.
 
 ### Use New Neo4j Database
 
