@@ -26,6 +26,12 @@ import scala.util.Random
  */
 object algorithms {
 
+  /**
+   * Perform a Connected Components calculation using Spark's GraphX algorithms
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list for the calculation
+   * @return a key-value list of calculations for each vertex
+   */
   def connectedComponents(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     val graph = GraphLoader.edgeListFile(sc, path);
 
@@ -38,6 +44,12 @@ object algorithms {
     JavaConversions.asJavaIterable(results)
   }
 
+  /**
+   * Perform a PageRank calculation using Spark's GraphX algorithms
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list for the calculation
+   * @return a key-value list of calculations for each vertex
+   */
   def pageRank(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     val graph = GraphLoader.edgeListFile(sc, path);
 
@@ -50,6 +62,12 @@ object algorithms {
     JavaConversions.asJavaIterable(results)
   }
 
+  /**
+   * Perform a Strongly Connected Components calculation using Spark's GraphX algorithms
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list for the calculation
+   * @return a key-value list of calculations for each vertex
+   */
   def stronglyConnectedComponents(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     val graph = GraphLoader.edgeListFile(sc, path);
 
@@ -62,6 +80,12 @@ object algorithms {
     JavaConversions.asJavaIterable(results)
   }
 
+  /**
+   * Perform a Triangle Count calculation using Spark's GraphX algorithms
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list for the calculation
+   * @return a key-value list of calculations for each vertex
+   */
   def triangleCount(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     val graph = GraphLoader.edgeListFile(sc, path, canonicalOrientation = true)
       .partitionBy(PartitionStrategy.RandomVertexCut)
@@ -79,6 +103,12 @@ object algorithms {
     def avg = average(data)
   }
 
+  /**
+   * Perform a Closeness Centrality calculation
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list for the calculation
+   * @return a key-value list of calculations for each vertex
+   */
   def closenessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     // The farness of a node s is defined as the sum of its distances to all other nodes,
     // and its closeness is defined as the reciprocal of the farness.
@@ -100,8 +130,14 @@ object algorithms {
     JavaConversions.asJavaIterable(results)
   }
 
+  /**
+   * Perform a Single Source Shortest Path (SSSP) calculation using Spark's GraphX algorithms
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list for the calculation
+   * @return a key-value list of calculations for each vertex
+   */
   def shortestPaths(sc: SparkContext, path: String): Graph[SPMap, Int] = {
-    val graph = GraphLoader.edgeListFile(sc, path);
+    val graph = GraphLoader.edgeListFile(sc, path)
 
     ShortestPaths.run(graph, graph.vertices.map { vx => vx._1}.collect())
   }
@@ -110,48 +146,62 @@ object algorithms {
     num.toDouble(ts.sum) / ts.size
   }
 
-  def inMemoryBetweennessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
-
+  /**
+   * Perform a Betweenness Centrality calculation on a supplied edge list.
+   * @param sc is the Spark Context
+   * @param path is the file path to the edge list
+   * @return a key-value list of calculations for each vertex
+   */
+  def betweennessCentrality(sc: SparkContext, path: String): java.lang.Iterable[String] = {
     // Create a tree
     val tree  = new DecisionTree[VertexId](0L, mutable.HashMap[VertexId, DecisionTree[VertexId]]())
 
+    // Load the edge list
     val graph = GraphLoader.edgeListFile(sc, path)
 
+    // Create an in-memory graph data structure
     graph.edges.collect().foreach(ed => tree.addLeaf(ed.srcId).addLeaf(ed.dstId))
 
+    // Get the set of vertices, cache, and collect
     val vertexIds = graph.vertices.map(v => v._1).cache().collect()
 
+    // Get a map of all shortest path distances using Pregel API
     val sssp = ShortestPaths.run(graph, graph.vertices.map { vx => vx._1}.collect()).vertices.collect()
 
+    // Collect all shortest paths
     val graphResults = sc.parallelize(vertexIds).map(row => {
-      println("*** " + row)
       (row, vertexIds.map(vt => {
         (vt, tree.getNode(row).allShortestPathsTo(vt, sssp))
       }))
     }).collectAsync().get().toArray
 
+    // Run betweenness centrality using the aggregated shortest path data for each vertex
     val result = algorithms.betweennessCentrality(sc, graphResults)
-
-
+    
     result
   }
 
+  /**
+   * Perform a Betweenness Centrality calculation on a supplied shortest path vertex map
+   * @param sc is the Spark Context
+   * @param graphResults is a map of vertices to their shortest paths
+   * @return a key-value list of calculations for each vertex
+   */
   def betweennessCentrality(sc: SparkContext, graphResults: Array[(VertexId, Array[(VertexId, Seq[Seq[VertexId]])])]): java.lang.Iterable[String] = {
+
+    // Calculate the number of shortest paths that go through each vertex
     val results =sc.parallelize(graphResults.map(dstVertex => {
       val results = dstVertex._2.map(v => {
-        if (v._2 != null) {
-          (v._1, v._2.map(vt => {
-            vt.drop(1).dropRight(1)
-          }).filter(vt => vt.size > 0))
-        } else {
+        if (v._2 != null) (v._1, v._2.map(vt => {
+          vt.drop(1).dropRight(1)
+        }).filter(vt => vt.size > 0))
+        else {
           (v._1, Seq[Seq[VertexId]]())
         }
-      })
-        .map(srcVertex => {
+      }).map(srcVertex => {
         val paths = srcVertex._2.length
         val vertexMaps = srcVertex._2.flatMap(v => v)
           .map(v => (v, 1.0 / paths.toDouble))
-
         if (vertexMaps.length == 0) {
           Seq[(VertexId, Double)]((srcVertex._1, 0.0))
         } else {
@@ -168,7 +218,7 @@ object algorithms {
     JavaConversions.asJavaIterable(results)
   }
 
-  def reduceByKey[K,V](collection: Traversable[Tuple2[K, V]])(implicit num: Numeric[V]) = {
+  def reduceByKey[K,V](collection: Traversable[(K, V)])(implicit num: Numeric[V]) = {
     import num._
     collection
       .groupBy(_._1)

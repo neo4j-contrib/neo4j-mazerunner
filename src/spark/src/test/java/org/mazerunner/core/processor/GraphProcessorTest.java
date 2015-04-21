@@ -95,7 +95,7 @@ public class GraphProcessorTest {
 
         if(GraphProcessor.javaSparkContext == null)
             GraphProcessor.initializeSparkContext();
-        Iterable<String> results = algorithms.inMemoryBetweennessCentrality(GraphProcessor.javaSparkContext.sc(), path);
+        Iterable<String> results = algorithms.betweennessCentrality(GraphProcessor.javaSparkContext.sc(), path);
 
         StringBuffer sb = new StringBuffer();
 
