@@ -8,7 +8,7 @@ import org.mazerunner.core.config.ConfigurationLoader
 import org.mazerunner.core.processor.GraphProcessor
 import org.scalatest.FlatSpec
 
-import scala.collection.{JavaConversions, mutable}
+import scala.collection.mutable
 
 /**
  * Copyright (C) 2014 Kenny Bastani
@@ -97,7 +97,7 @@ class ShortestPathTests  extends FlatSpec {
 
     val result = algorithms.betweennessCentrality(sc, graphResults)
 
-    val resultStream = JavaConversions.iterableAsScalaIterable(result)
+    val resultStream = result
 
     for (x <- resultStream) {
       println(x)

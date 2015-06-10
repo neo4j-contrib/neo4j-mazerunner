@@ -9,11 +9,13 @@ import com.rabbitmq.client.QueueingConsumer;
 import config.ConfigurationLoader;
 import hdfs.FileUtil;
 import jobs.PartitionedAnalysis;
+import models.JobRequestType;
 import models.ProcessorMessage;
 import org.neo4j.graphdb.GraphDatabaseService;
 import translation.Writer;
 
 import java.io.BufferedReader;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -74,8 +76,12 @@ public class BatchWriterService extends AbstractScheduledService {
                         PartitionedAnalysis.updatePartition(processorMessage, bufferedReader, graphDb);
                         break;
                     case Unpartitioned:
-                        // Stream the the updates as parallel transactions to Neo4j
-                        Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
+                        if(Objects.equals(processorMessage.getAnalysis(), JobRequestType.COLLABORATIVE_FILTERING.toString().toLowerCase())) {
+                            Writer.asyncImportCollaborativeFiltering(bufferedReader, graphDb);
+                        } else {
+                            // Stream the the updates as parallel transactions to Neo4j
+                            Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
+                        }
                         break;
                 }
 

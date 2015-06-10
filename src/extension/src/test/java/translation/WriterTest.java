@@ -6,6 +6,7 @@ import hdfs.FileUtil;
 import jobs.PartitionedAnalysis;
 import junit.framework.TestCase;
 import messaging.Worker;
+import models.JobRequestType;
 import models.PartitionDescription;
 import models.ProcessorMessage;
 import models.ProcessorMode;
@@ -40,33 +41,55 @@ public class WriterTest extends TestCase {
     }
 
     private void createSampleGraph(GraphDatabaseService db) {
-        Transaction tx = db.beginTx();
+
         List<Node> nodes = new ArrayList<>();
 
-        int max = 10000;
-
+        int max = 200;
+        Transaction tx = db.beginTx();
         Node partitionNode = db.createNode();
         partitionNode.addLabel(DynamicLabel.label("Category"));
+        tx.success();
+        tx.close();
         int count = 0;
         int partitionBlockCount = 50;
 
+        tx = db.beginTx();
         // Create nodes
         for (int i = 0; i < max; i++) {
+
             nodes.add(db.createNode());
             nodes.get(i).addLabel(DynamicLabel.label("Node"));
             partitionNode.createRelationshipTo(nodes.get(i), withName("HAS_CATEGORY"));
             count++;
             if(count >= partitionBlockCount && i != max - 1) {
+
                 count = 0;
                 partitionNode = db.createNode();
                 partitionNode.addLabel(DynamicLabel.label("Category"));
+
+                tx.success();
+                tx.close();
+                tx = db.beginTx();
+
+                System.out.println(i);
             }
         }
 
+        tx.success();
+        tx.close();
+
+        tx = db.beginTx();
         // Create PageRank test graph
         for (int i = 0; i < (max / 2) - 1; i++) {
             nodes.get(i).createRelationshipTo(nodes.get(i + (max / 2)), withName("CONNECTED_TO"));
             nodes.get(i + (max / 2)).createRelationshipTo(nodes.get(i + 1), withName("CONNECTED_TO"));
+            if(count >= partitionBlockCount / 2 && i != max - 1) {
+                tx.success();
+                tx.close();
+                tx = db.beginTx();
+
+                System.out.println("B: " + i);
+            }
             if(i == (max / 2) - 2) {
                 nodes.get((i + 1) + (max / 2)).createRelationshipTo(nodes.get(0), withName("CONNECTED_TO"));
                 nodes.get(i + 1).createRelationshipTo(nodes.get((max / 2)), withName("CONNECTED_TO"));
@@ -78,7 +101,7 @@ public class WriterTest extends TestCase {
     }
 
     @Test
-    public void testParallelWriteToHadoop() throws Exception {
+    public void testParallelWriteGraphResultToHDFS() throws Exception {
         GraphDatabaseService db = setUpDb();
 
         // Use test configurations
@@ -87,6 +110,18 @@ public class WriterTest extends TestCase {
         createSampleGraph(db);
 
         Writer.exportSubgraphToHDFSParallel(db);
+    }
+
+    @Test
+    public void testParallelWriteCypherResultToHDFS() throws Exception {
+        GraphDatabaseService db = setUpDb();
+
+        // Use test configurations
+        ConfigurationLoader.testPropertyAccess = true;
+
+        createSampleGraph(db);
+
+        Writer.exportCypherQueryToHDFSParallel(db, "MATCH (n1)-[r]->(n2) RETURN id(n1) as v1, id(n2) as v2, rand() as v3", JobRequestType.COLLABORATIVE_FILTERING);
     }
 
     @Test
@@ -101,6 +136,26 @@ public class WriterTest extends TestCase {
         // Export graph to HDFS and send message to Spark when complete
         PartitionedAnalysis partitionedAnalysis = new PartitionedAnalysis("pagerank", "Category", "HAS_CATEGORY", "CONNECTED_TO", db);
         partitionedAnalysis.analyzePartitions();
+    }
+
+    @Test
+    public void testCFParallelUpdate() throws Exception {
+
+        GraphDatabaseService db = setUpDb();
+
+        // Use test configurations
+        ConfigurationLoader.testPropertyAccess = true;
+
+        createSampleGraph(db);
+
+        Path path = Writer.exportCypherQueryToHDFSParallel(db, "MATCH (n1)-[r]->(n2) RETURN id(n1) as v1, id(n2) as v2, toInt(ROUND((rand() * 10.0))) as v3", JobRequestType.COLLABORATIVE_FILTERING);
+
+        ProcessorMessage processorMessage = new ProcessorMessage(path.toString(), JobRequestType.COLLABORATIVE_FILTERING.toString().toLowerCase(), ProcessorMode.Unpartitioned);
+
+        BufferedReader br = FileUtil.readGraphAdjacencyList(processorMessage);
+
+        // Test parallel update
+        Writer.asyncImportCollaborativeFiltering(br, db);
     }
 
     @Test
@@ -173,6 +228,28 @@ public class WriterTest extends TestCase {
     private static GraphDatabaseService setUpDb()
     {
         return new TestGraphDatabaseFactory().newImpermanentDatabase();
+    }
+
+    public void testSendCFMessage() throws Exception {
+        ConfigurationLoader.testPropertyAccess=true;
+
+        // Serialize processor message
+        GraphDatabaseService db = setUpDb();
+
+        // Use test configurations
+        ConfigurationLoader.testPropertyAccess = true;
+
+        createSampleGraph(db);
+
+        Path path = Writer.exportCypherQueryToHDFSParallel(db, "MATCH (n1)-[r]->(n2) RETURN id(n1) as v1, id(n2) as v2, toInt(ROUND((rand() * 10.0))) as v3", JobRequestType.COLLABORATIVE_FILTERING);
+
+        ProcessorMessage processorMessage = new ProcessorMessage(path.toString(), JobRequestType.COLLABORATIVE_FILTERING.toString().toLowerCase(), ProcessorMode.Unpartitioned);
+
+        Gson gson = new Gson();
+        String strMessage = gson.toJson(processorMessage);
+
+        // Send message to the Spark graph processor
+        Worker.sendMessage(strMessage);
     }
 
     public void testSendProcessorMessage() throws Exception {

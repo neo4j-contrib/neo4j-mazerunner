@@ -42,6 +42,18 @@ public class GraphProcessorTest {
     }
 
     @Test
+    public void testEdgeBetweenness() throws Exception {
+
+        ConfigurationLoader.testPropertyAccess = true;
+
+        // Test case A
+        String expectedA = "0 0.0\n1 3.0\n2 4.0\n3 3.0\n4 0.0\n";
+        List<String> nodeListA = Arrays.asList("2 1\n", "3 2\n", "4 3\n", "5 4\n", "6 5\n", "7 6\n", "8 7\n", "9 8\n", "10 9\n", "1 10\n", "1 3\n", "2 3\n", "3 5\n", "4 5\n", "5 7\n", "6 7\n", "7 9\n", "8 9\n", "9 1\n", "10 1");
+        String actualA = getEdgeBetweennessCentrality("a", nodeListA);
+        assertEquals(expectedA, actualA);
+    }
+
+    @Test
     public void testBetweennessCentrality() throws Exception {
 
         ConfigurationLoader.testPropertyAccess = true;
@@ -104,6 +116,24 @@ public class GraphProcessorTest {
         return sb.toString();
     }
 
+    private String getEdgeBetweennessCentrality(String test, List<String> nodeList) throws IOException, URISyntaxException {
+        // Create test path
+        String path = ConfigurationLoader.getInstance().getHadoopHdfsUri() + "/test/" + test + "/edgeList.txt";
+
+        // Test writing the PageRank result to HDFS path
+        FileUtil.writeListFile(path, nodeList.iterator());
+
+        if(GraphProcessor.javaSparkContext == null)
+            GraphProcessor.initializeSparkContext();
+        Iterable<String> results = algorithms.edgeBetweenness(GraphProcessor.javaSparkContext.sc(), path);
+
+        StringBuffer sb = new StringBuffer();
+
+        results.iterator().forEachRemaining(sb::append);
+
+        return sb.toString();
+    }
+
     @Test
     public void testVertexPath() throws Exception {
         DecisionTree<Long> tree  = new DecisionTree<>(0L, new HashMap<>());
@@ -112,8 +142,24 @@ public class GraphProcessorTest {
         tree.traverseTo(4L).addLeaf(6L);
         tree.traverseTo(4L).addLeaf(7L).addLeaf(8L);
         tree.traverseTo(7L).addLeaf(9L);
-        System.out.println(tree.toString());
+        System.out.println(tree.renderGraph());
 
         System.out.println(tree.shortestPathTo(9L));
+    }
+
+    @Test
+    public void collaborativeFilteringTest() throws Exception {
+
+        ConfigurationLoader.testPropertyAccess = true;
+
+        // Create test path
+        String path = "src/test/resources/recommendation";
+
+        if(GraphProcessor.javaSparkContext == null)
+            GraphProcessor.initializeSparkContext();
+
+        algorithms.collaborativeFiltering(GraphProcessor.javaSparkContext.sc(), path).iterator()
+                .forEachRemaining(System.out::println);
+
     }
 }
