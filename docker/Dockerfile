@@ -1,7 +1,7 @@
 # Dockerizing Neo4j Mazerunner: Dockerfile for building graph analytics
 # applications.
 
-FROM       dockerfile/java:oracle-java8
+FROM       java:openjdk-8-jdk
 MAINTAINER K.B. Name <kb@socialmoon.com>
 
 USER root
@@ -41,9 +41,8 @@ RUN mkdir /etc/hadoop
 COPY conf/hadoop /etc/hadoop
 
 # Copy Mazerunner service binary
-COPY bin /etc/mazerunner
-
 WORKDIR /etc/mazerunner
+RUN wget https://s3-us-west-1.amazonaws.com/mazerunner-artifacts/spark-1.1.2-RELEASE-driver.jar
 
 ENV BOOTSTRAP /etc/mazerunner/bootstrap.sh
 

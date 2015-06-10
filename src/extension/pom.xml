@@ -6,10 +6,10 @@
 
     <groupId>org.mazerunner</groupId>
     <artifactId>extension</artifactId>
-    <version>1.1.1-RELEASE</version>
+    <version>1.1.2-RELEASE</version>
 
     <properties>
-        <neo4j.version>2.2.1</neo4j.version>
+        <neo4j.version>2.2.2</neo4j.version>
         <joda.version>2.3</joda.version>
         <guava.version>17.0</guava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

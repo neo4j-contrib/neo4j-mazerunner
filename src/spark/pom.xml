@@ -6,7 +6,7 @@
 
     <groupId>org.mazerunner</groupId>
     <artifactId>spark</artifactId>
-    <version>1.1.1-RELEASE</version>
+    <version>1.1.2-RELEASE</version>
 
     <properties>
         <jetty.version>7.6.9.v20130131</jetty.version>
