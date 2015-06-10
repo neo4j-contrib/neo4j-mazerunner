@@ -35,6 +35,8 @@ public class GraphProcessor {
     public static final String STRONGLY_CONNECTED_COMPONENTS = "strongly_connected_components";
     public static final String CLOSENESS_CENTRALITY = "closeness_centrality";
     public static final String BETWEENNESS_CENTRALITY = "betweenness_centrality";
+    public static final String EDGE_BETWEENNESS = "edge_betweenness";
+    public static final String COLLABORATIVE_FILTERING = "collaborative_filtering";
 
     public static JavaSparkContext javaSparkContext = null;
 
@@ -71,6 +73,13 @@ public class GraphProcessor {
                 // Route to BetweennessCentrality
                 results = algorithms.betweennessCentrality(javaSparkContext.sc(), processorMessage.getPath());
                 break;
+            case EDGE_BETWEENNESS:
+                // Route to BetweennessCentrality
+                results = algorithms.edgeBetweenness(javaSparkContext.sc(), processorMessage.getPath());
+                break;
+            case COLLABORATIVE_FILTERING:
+                results = algorithms.collaborativeFiltering(javaSparkContext.sc(), processorMessage.getPath());
+                break;
             default:
                 // Analysis does not exist
                 System.out.println("Did not recognize analysis key: " + processorMessage.getAnalysis());
@@ -90,7 +99,10 @@ public class GraphProcessor {
 
     public static JavaSparkContext initializeSparkContext() {
         SparkConf conf = new SparkConf().setAppName(ConfigurationLoader.getInstance().getAppName())
-                .setMaster(ConfigurationLoader.getInstance().getSparkHost());
+                .setMaster(ConfigurationLoader.getInstance().getSparkHost())
+                .set("spark.executor.memory", "4g")
+                .set("spark.driver.memory", "4g")
+                .set("spark.executor.instances", "2");
 
         javaSparkContext = new JavaSparkContext(conf);
 
