@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.Path;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import java.io.BufferedReader;
@@ -340,8 +341,15 @@ public class Writer {
             String[] rowVal = line.split("\\s");
             Long nodeId = Long.parseLong(rowVal[0]);
             Double weight = Double.parseDouble(rowVal[1]);
-            db.getNodeById(nodeId).setProperty(analysis, weight);
+
+            try {
+                db.getNodeById(nodeId).setProperty(analysis, weight);
+            } catch (DeadlockDetectedException ex) {
+                System.out.println(ex.getMessage());
+            }
+
             Writer.updateCounter++;
+
             if (Writer.updateCounter % reportBlockSize == 0) {
                 System.out.println("Nodes updated: " + Writer.updateCounter);
             }
