@@ -28,7 +28,8 @@ public class BatchWriterService extends AbstractScheduledService {
         this.graphDb = graphDb;
     }
 
-    public final static BatchWriterService INSTANCE = new BatchWriterService();
+    public static BatchWriterService INSTANCE = new BatchWriterService();
+
     private BatchWriterService() {
         if (!this.isRunning()){
             logger.info("Starting BatchWriterService");
@@ -58,46 +59,53 @@ public class BatchWriterService extends AbstractScheduledService {
         channel.basicConsume(TASK_QUEUE_NAME, false, consumer);
 
         while (true) {
+            QueueingConsumer.Delivery delivery = null;
             try {
-                QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-                String message = new String(delivery.getBody());
+                delivery = consumer.nextDelivery(40000L);
 
-                System.out.println(" [x] Received processor message '" + message + "'");
+                if(delivery != null) {
+                    String message = new String(delivery.getBody());
 
-                // Deserialize the processor message
-                Gson gson = new Gson();
-                ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
+                    System.out.println(" [x] Received processor message '" + message + "'");
 
-                // Open the node property update list file from HDFS
-                BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
+                    // Deserialize the processor message
+                    Gson gson = new Gson();
+                    ProcessorMessage processorMessage = gson.fromJson(message, ProcessorMessage.class);
 
-                switch (processorMessage.getMode()) {
-                    case Partitioned:
-                        PartitionedAnalysis.updatePartition(processorMessage, bufferedReader, graphDb);
-                        break;
-                    case Unpartitioned:
-                        if(Objects.equals(processorMessage.getAnalysis(), JobRequestType.COLLABORATIVE_FILTERING.toString().toLowerCase())) {
-                            Writer.asyncImportCollaborativeFiltering(bufferedReader, graphDb);
-                        } else {
-                            // Stream the the updates as parallel transactions to Neo4j
-                            Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
-                        }
-                        break;
+                    // Open the node property update list file from HDFS
+                    BufferedReader bufferedReader = FileUtil.readGraphAdjacencyList(processorMessage);
+
+                    switch (processorMessage.getMode()) {
+                        case Partitioned:
+                            PartitionedAnalysis.updatePartition(processorMessage, bufferedReader, graphDb);
+                            break;
+                        case Unpartitioned:
+                            if (Objects.equals(processorMessage.getAnalysis(), JobRequestType.COLLABORATIVE_FILTERING.toString().toLowerCase())) {
+                                Writer.asyncImportCollaborativeFiltering(bufferedReader, graphDb);
+                            } else {
+                                // Stream the the updates as parallel transactions to Neo4j
+                                Writer.asyncUpdate(processorMessage, bufferedReader, graphDb);
+                            }
+                            break;
+                    }
+
+                    // Close the stream
+                    bufferedReader.close();
+
+                    System.out.println(" [x] Done");
+
+                    channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
                 }
-
-                // Close the stream
-                bufferedReader.close();
-
-                System.out.println(" [x] Done");
-
-                channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             } catch (Exception ex) {
-                System.out.println(ex.getMessage());
+                ex.printStackTrace();
                 System.out.println("Waiting...");
 
                 // Hold on error cycle to prevent high throughput writes to console log
                 Thread.sleep(5000);
                 System.out.println("Recovered...");
+
+                if(delivery != null)
+                    channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             }
         }
     }
