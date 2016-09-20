@@ -2,7 +2,6 @@ hdfs:
   image: sequenceiq/hadoop-docker:2.4.1
 mazerunner:
   image: kbastani/neo4j-graph-analytics:1.1.0
-  command: /etc/bootstrap.sh -bash
   links:
   - hdfs:hdfs
 graphdb:
